@@ -5,5 +5,5 @@
     <option name="pathToExecutable" value="/opt/homebrew/bin/black" />
     <option name="sdkName" value="Python 3.13 (ddd_tictactoe)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 (ddd_tictactoe)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 (ddd_crowdfunding)" project-jdk-type="Python SDK" />
 </project>
