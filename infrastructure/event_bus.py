@@ -1,4 +1,5 @@
 import contextlib
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import AsyncGenerator
@@ -69,9 +70,21 @@ class PostgresUnitOfWork(UnitOfWork):
         await super().rollback()
 
 
+# Mock UOW for unit tests
+class MockUnitOfWork(UnitOfWork):
+    def __init__(self) -> None:
+        super().__init__()
+
+    async def commit(self) -> None:
+        pass
+
+    async def rollback(self) -> None:
+        pass
+
+
 # Unit Of Work context manager:
 @contextlib.asynccontextmanager
-async def make_unit_of_work() -> AsyncGenerator[UnitOfWork, None]:
+async def make_postgres_unit_of_work() -> AsyncGenerator[UnitOfWork, None]:
     # TODO: Prevent transactions inside transactions
 
     pool = postgres_pool.pool
@@ -93,6 +106,21 @@ async def make_unit_of_work() -> AsyncGenerator[UnitOfWork, None]:
         except BaseException:
             await uow.rollback()
             raise
+
+
+@contextlib.asynccontextmanager
+async def make_mock_unit_of_work() -> AsyncGenerator[MockUnitOfWork, None]:
+    uow = MockUnitOfWork()
+
+    yield uow
+
+
+# TODO: Not the most reliable way, hide behind an abstraction
+if "pytest" in sys.modules:
+    make_unit_of_work = make_mock_unit_of_work
+
+else:
+    make_unit_of_work = make_postgres_unit_of_work
 
 
 # The event bus: handles a message, dispatches it to the right handler,

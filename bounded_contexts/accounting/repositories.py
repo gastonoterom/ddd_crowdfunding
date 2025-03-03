@@ -2,7 +2,7 @@ import json
 from abc import ABC, abstractmethod
 
 from bounded_contexts.accounting.aggregates import Account, Deposit, Withdrawal
-from infrastructure.event_bus import UnitOfWork, PostgresUnitOfWork
+from infrastructure.event_bus import UnitOfWork, PostgresUnitOfWork, MockUnitOfWork
 
 
 # Abstract repository
@@ -98,9 +98,26 @@ class PostgresAccountRepository(AccountRepository):
         )
 
 
-# Account repository factory, based on the type of UnitOfWork
+# Mock repository for tests
+class MockAccountRepository(AccountRepository):
+    # Class property for persistence across instances
+    accounts: dict[str, Account] = {}
+
+    async def add(self, account: Account) -> None:
+        self.accounts[account.account_id] = account
+
+    async def update(self, account: Account) -> None:
+        self.accounts[account.account_id] = account
+
+    async def find_by_account_id(self, account_id: str) -> Account | None:
+        return self.accounts.get(account_id)
+
+
 def account_repository(uow: UnitOfWork) -> AccountRepository:
     if isinstance(uow, PostgresUnitOfWork):
         return PostgresAccountRepository(uow)
+
+    if isinstance(uow, MockUnitOfWork):
+        return MockAccountRepository()
 
     raise Exception("Unsupported UnitOfWork type.")

@@ -17,10 +17,11 @@ class CreateInvoice(Command):
 
 
 @dataclass(frozen=True)
-class InvoicePaidEvent(Event):
+class DepositInvoicePaidEvent(Event):
     invoice_id: str  # TODO: Use payment hash
     account_id: str
     amount: int
+    invoice_type: InvoiceType
 
 
 @dataclass(frozen=True)
@@ -28,3 +29,4 @@ class WithdrawalCreatedEvent(Event):
     invoice_id: str  # TODO: Use payment hash
     account_id: str
     amount: int
+    invoice_type: InvoiceType

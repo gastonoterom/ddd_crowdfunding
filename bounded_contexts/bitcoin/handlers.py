@@ -1,7 +1,7 @@
 from bounded_contexts.bitcoin.aggregates import BTCInvoice, InvoiceStatus, InvoiceType
 from bounded_contexts.bitcoin.messages import (
     CreateInvoice,
-    InvoicePaidEvent,
+    DepositInvoicePaidEvent,
     WithdrawalCreatedEvent,
 )
 from bounded_contexts.bitcoin.repositories import invoice_repository
@@ -28,11 +28,14 @@ async def handle_create_invoice(uow: UnitOfWork, command: CreateInvoice) -> None
                 invoice_id=invoice.invoice_id,
                 account_id=invoice.account_id,
                 amount=invoice.amount,
+                invoice_type=InvoiceType.WITHDRAWAL,
             )
         )
 
 
-async def handle_invoice_paid_event(uow: UnitOfWork, event: InvoicePaidEvent) -> None:
+async def handle_invoice_paid_event(
+    uow: UnitOfWork, event: DepositInvoicePaidEvent
+) -> None:
     invoice = await invoice_repository(uow).find_by_invoice_id(event.invoice_id)
 
     assert invoice
@@ -44,4 +47,4 @@ async def handle_invoice_paid_event(uow: UnitOfWork, event: InvoicePaidEvent) ->
 
 def register_bitcoin_handlers() -> None:
     event_bus.register_command_handler(CreateInvoice, handle_create_invoice)
-    event_bus.register_event_handler(InvoicePaidEvent, handle_invoice_paid_event)
+    event_bus.register_event_handler(DepositInvoicePaidEvent, handle_invoice_paid_event)

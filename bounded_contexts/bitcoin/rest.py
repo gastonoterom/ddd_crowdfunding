@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from bounded_contexts.bitcoin.aggregates import InvoiceStatus
 from bounded_contexts.bitcoin.messages import (
     CreateInvoice,
-    InvoicePaidEvent,
+    DepositInvoicePaidEvent,
     InvoiceType,
 )
 from bounded_contexts.bitcoin.views import get_invoice_view
@@ -58,7 +58,7 @@ def register_bitcoin_routes(app: FastAPI) -> None:
 
     # TODO: There should be a periodic event for this
     @app.post("/bitcoin/verify_deposit")
-    async def put_Verify_deposit(body: VerifyInvoiceRequest) -> None:
+    async def put_verify_deposit(body: VerifyInvoiceRequest) -> None:
         is_paid = await is_invoice_paid(
             payment_hash=body.payment_hash,
         )
@@ -66,6 +66,7 @@ def register_bitcoin_routes(app: FastAPI) -> None:
         if not is_paid:
             raise Exception("Invoice not paid")
 
+        # TODO: This should be a command
         invoice_view = await get_invoice_view(payment_hash=body.payment_hash)
 
         # If the invoice is already paid, we don't need to do anything else
@@ -73,10 +74,11 @@ def register_bitcoin_routes(app: FastAPI) -> None:
             return
 
         await event_bus.handle(
-            InvoicePaidEvent(
+            DepositInvoicePaidEvent(
                 invoice_id=invoice_view.invoice_id,
                 account_id=invoice_view.account_id,
                 amount=invoice_view.amount,
+                invoice_type=invoice_view.invoice_type,
             )
         )
 

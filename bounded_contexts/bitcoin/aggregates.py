@@ -56,3 +56,7 @@ class BTCInvoice:
     @property
     def payment_request(self) -> str:
         return self._payment_request
+
+    @property
+    def invoice_type(self) -> InvoiceType:
+        return self._invoice_type

@@ -21,6 +21,9 @@ from infrastructure.event_bus import make_unit_of_work
 app = FastAPI()
 
 
+# TODO: Better coverage
+
+
 # TODO: Reconsider this, and hide behind some kind of configuration (also, on_event is deprecated)
 # Run DDL
 @app.on_event("startup")

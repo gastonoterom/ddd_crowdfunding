@@ -71,6 +71,8 @@ class Account:
         return deposits_total - withdrawals_total
 
 
+# TODO: Aggregate tests for this
+#  Move to service level functions
 def account_transfer(
     idempotency_key: str,
     from_account: Account,

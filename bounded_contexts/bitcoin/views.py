@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from bounded_contexts.bitcoin.aggregates import BTCInvoice
+from bounded_contexts.bitcoin.aggregates import BTCInvoice, InvoiceType
 from bounded_contexts.bitcoin.repositories import invoice_repository
 from infrastructure.event_bus import make_unit_of_work
 
@@ -14,6 +14,7 @@ class InvoiceView:
     payment_hash: str
     payment_request: str
     status: str
+    invoice_type: InvoiceType
 
 
 async def get_invoice_view(payment_hash: str) -> InvoiceView:
@@ -32,4 +33,5 @@ async def get_invoice_view(payment_hash: str) -> InvoiceView:
             status=invoice.status,
             payment_hash=invoice.payment_hash,
             payment_request=invoice.payment_request,
+            invoice_type=invoice.invoice_type,
         )
