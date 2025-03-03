@@ -11,7 +11,7 @@ class InvoiceRepository(ABC):
     async def add(self, invoice: BTCInvoice) -> None:
         pass
 
-    # TODO: We can add reference to dirty objects and
+    # TODO: We can add references to dirty objects and
     #  update them automatically
     @abstractmethod
     async def update(self, invoice: BTCInvoice) -> None:
