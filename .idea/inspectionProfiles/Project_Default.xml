@@ -1,0 +1,155 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="78" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="Eslint" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="HtmlUnknownAttribute" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="myValues">
+        <value>
+          <list size="1">
+            <item index="0" class="java.lang.String" itemvalue="aria-describedby" />
+          </list>
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="96">
+            <item index="0" class="java.lang.String" itemvalue="dependency_injector" />
+            <item index="1" class="java.lang.String" itemvalue="setuptools" />
+            <item index="2" class="java.lang.String" itemvalue="bravado-core" />
+            <item index="3" class="java.lang.String" itemvalue="simplejson" />
+            <item index="4" class="java.lang.String" itemvalue="pydantic_core" />
+            <item index="5" class="java.lang.String" itemvalue="typing_extensions" />
+            <item index="6" class="java.lang.String" itemvalue="psycopg2" />
+            <item index="7" class="java.lang.String" itemvalue="pytest" />
+            <item index="8" class="java.lang.String" itemvalue="PyJWT" />
+            <item index="9" class="java.lang.String" itemvalue="alembic" />
+            <item index="10" class="java.lang.String" itemvalue="haversine" />
+            <item index="11" class="java.lang.String" itemvalue="PyYAML" />
+            <item index="12" class="java.lang.String" itemvalue="mypy" />
+            <item index="13" class="java.lang.String" itemvalue="SQLAlchemy" />
+            <item index="14" class="java.lang.String" itemvalue="types-pytz" />
+            <item index="15" class="java.lang.String" itemvalue="psycopg2-binary" />
+            <item index="16" class="java.lang.String" itemvalue="marshmallow" />
+            <item index="17" class="java.lang.String" itemvalue="connexion" />
+            <item index="18" class="java.lang.String" itemvalue="types-PyYAML" />
+            <item index="19" class="java.lang.String" itemvalue="asynctest" />
+            <item index="20" class="java.lang.String" itemvalue="aiohttp_jinja2" />
+            <item index="21" class="java.lang.String" itemvalue="Jinja2" />
+            <item index="22" class="java.lang.String" itemvalue="pyopenssl" />
+            <item index="23" class="java.lang.String" itemvalue="types-python-dateutil" />
+            <item index="24" class="java.lang.String" itemvalue="elasticsearch" />
+            <item index="25" class="java.lang.String" itemvalue="sentry-sdk" />
+            <item index="26" class="java.lang.String" itemvalue="pytest-cov" />
+            <item index="27" class="java.lang.String" itemvalue="Deprecated" />
+            <item index="28" class="java.lang.String" itemvalue="freezegun" />
+            <item index="29" class="java.lang.String" itemvalue="aiobotocore" />
+            <item index="30" class="java.lang.String" itemvalue="types-freezegun" />
+            <item index="31" class="java.lang.String" itemvalue="jsonschema" />
+            <item index="32" class="java.lang.String" itemvalue="types-retry" />
+            <item index="33" class="java.lang.String" itemvalue="coverage" />
+            <item index="34" class="java.lang.String" itemvalue="botocore" />
+            <item index="35" class="java.lang.String" itemvalue="asyncpg" />
+            <item index="36" class="java.lang.String" itemvalue="pytest-aiohttp" />
+            <item index="37" class="java.lang.String" itemvalue="types-Deprecated" />
+            <item index="38" class="java.lang.String" itemvalue="sendgrid" />
+            <item index="39" class="java.lang.String" itemvalue="bcrypt" />
+            <item index="40" class="java.lang.String" itemvalue="awebus" />
+            <item index="41" class="java.lang.String" itemvalue="elasticsearch-dsl" />
+            <item index="42" class="java.lang.String" itemvalue="aiohttp_cors" />
+            <item index="43" class="java.lang.String" itemvalue="mock" />
+            <item index="44" class="java.lang.String" itemvalue="aiohttp" />
+            <item index="45" class="java.lang.String" itemvalue="pytz" />
+            <item index="46" class="java.lang.String" itemvalue="twilio" />
+            <item index="47" class="java.lang.String" itemvalue="iso3166" />
+            <item index="48" class="java.lang.String" itemvalue="types-mock" />
+            <item index="49" class="java.lang.String" itemvalue="validate-email" />
+            <item index="50" class="java.lang.String" itemvalue="greenlet" />
+            <item index="51" class="java.lang.String" itemvalue="webcolors" />
+            <item index="52" class="java.lang.String" itemvalue="python-dateutil" />
+            <item index="53" class="java.lang.String" itemvalue="cffi" />
+            <item index="54" class="java.lang.String" itemvalue="voluptuous" />
+            <item index="55" class="java.lang.String" itemvalue="aioapns" />
+            <item index="56" class="java.lang.String" itemvalue="jsonpickle" />
+            <item index="57" class="java.lang.String" itemvalue="httplib2" />
+            <item index="58" class="java.lang.String" itemvalue="pytest-xdist" />
+            <item index="59" class="java.lang.String" itemvalue="pycparser" />
+            <item index="60" class="java.lang.String" itemvalue="MarkupSafe" />
+            <item index="61" class="java.lang.String" itemvalue="requests" />
+            <item index="62" class="java.lang.String" itemvalue="importlib-metadata" />
+            <item index="63" class="java.lang.String" itemvalue="redis" />
+            <item index="64" class="java.lang.String" itemvalue="easydict" />
+            <item index="65" class="java.lang.String" itemvalue="behave" />
+            <item index="66" class="java.lang.String" itemvalue="celery" />
+            <item index="67" class="java.lang.String" itemvalue="pathlib" />
+            <item index="68" class="java.lang.String" itemvalue="aws-xray-sdk" />
+            <item index="69" class="java.lang.String" itemvalue="pyOpenSSL" />
+            <item index="70" class="java.lang.String" itemvalue="stripe" />
+            <item index="71" class="java.lang.String" itemvalue="urllib3" />
+            <item index="72" class="java.lang.String" itemvalue="GeoAlchemy2" />
+            <item index="73" class="java.lang.String" itemvalue="deepdiff6" />
+            <item index="74" class="java.lang.String" itemvalue="vine" />
+            <item index="75" class="java.lang.String" itemvalue="pycln" />
+            <item index="76" class="java.lang.String" itemvalue="six" />
+            <item index="77" class="java.lang.String" itemvalue="tornado" />
+            <item index="78" class="java.lang.String" itemvalue="phonenumbers" />
+            <item index="79" class="java.lang.String" itemvalue="wheel" />
+            <item index="80" class="java.lang.String" itemvalue="py-spy" />
+            <item index="81" class="java.lang.String" itemvalue="cryptography" />
+            <item index="82" class="java.lang.String" itemvalue="swagger-spec-validator" />
+            <item index="83" class="java.lang.String" itemvalue="openapi-core" />
+            <item index="84" class="java.lang.String" itemvalue="flower" />
+            <item index="85" class="java.lang.String" itemvalue="jinja2" />
+            <item index="86" class="java.lang.String" itemvalue="boto3" />
+            <item index="87" class="java.lang.String" itemvalue="braintree" />
+            <item index="88" class="java.lang.String" itemvalue="aioredis" />
+            <item index="89" class="java.lang.String" itemvalue="openpyxl" />
+            <item index="90" class="java.lang.String" itemvalue="python-dependency-injector" />
+            <item index="91" class="java.lang.String" itemvalue="black" />
+            <item index="92" class="java.lang.String" itemvalue="yarl" />
+            <item index="93" class="java.lang.String" itemvalue="pytest-asyncio" />
+            <item index="94" class="java.lang.String" itemvalue="elastic-transport" />
+            <item index="95" class="java.lang.String" itemvalue="werkzeug" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="E711" />
+          <option value="E712" />
+          <option value="E301" />
+          <option value="W605" />
+          <option value="E203" />
+          <option value="E402" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N803" />
+          <option value="N806" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="common.view.view.View.user_id" />
+          <option value="common.view.view.View.user" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="SqlNoDataSourceInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="TsLint" enabled="true" level="WARNING" enabled_by_default="true" />
+  </profile>
+</component>
