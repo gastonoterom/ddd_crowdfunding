@@ -72,6 +72,8 @@ class PostgresUnitOfWork(UnitOfWork):
 # Unit Of Work context manager:
 @contextlib.asynccontextmanager
 async def make_unit_of_work() -> AsyncGenerator[UnitOfWork, None]:
+    # TODO: Prevent transactions inside transactions
+
     pool = postgres_pool.pool
 
     if pool is None:
@@ -101,7 +103,9 @@ class EventBus:
         self,
     ):
         # TODO: Better typing
+        # Commands can have 1 and only 1 handler
         self._command_handlers: dict[type[Command], callable] = {}
+        # Events can have N handlers
         self._event_handlers: dict[type[Event], list[callable]] = {}
 
     def register_command_handler(
