@@ -19,20 +19,20 @@ async def create_login_token_view(username: str, password: str) -> LoginTokenVie
             username=username,
         )
 
-        if account is None:
-            raise Exception(f"Invalid login.")
+    if account is None:
+        raise Exception(f"Invalid login.")
 
-        valid_hash = await HashUtils.verify(
-            plain_text=password,
-            hashed_text=account.password,
-        )
+    valid_hash = await HashUtils.verify(
+        plain_text=password,
+        hashed_text=account.password,
+    )
 
-        if not valid_hash:
-            raise Exception(f"Invalid login.")
+    if not valid_hash:
+        raise Exception(f"Invalid login.")
 
-        return LoginTokenView(
-            account_id=account.account_id,
-            token=await JWTUtils.create_token(
-                payload={"account_id": account.account_id}
-            ),
-        )
+    return LoginTokenView(
+        account_id=account.account_id,
+        token=await JWTUtils.create_token(
+            payload={"account_id": account.account_id}
+        ),
+    )

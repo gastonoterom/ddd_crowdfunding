@@ -8,9 +8,3 @@ class RegisterAccount(Command):
     account_id: str
     username: str
     password: str
-
-
-@dataclass(frozen=True)
-class Login(Command):
-    username: str
-    password: str
