@@ -1,7 +1,8 @@
+from typing import Annotated
 from uuid import uuid4
 
 import bolt11
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 
 from bounded_contexts.bitcoin.aggregates import InvoiceStatus
@@ -13,12 +14,11 @@ from bounded_contexts.bitcoin.messages import (
 from bounded_contexts.bitcoin.views import get_invoice_view
 from infrastructure.event_bus import event_bus
 from infrastructure.ln_bits import create_invoice, is_invoice_paid, pay_invoice
+from utils.fastapi import get_account_id
 
 
 def register_bitcoin_routes(app: FastAPI) -> None:
     class CreateInvoiceRequest(BaseModel):
-        # TODO: Real security
-        account_id: str
         amount: int
 
     class CreateInvoiceResponse(BaseModel):
@@ -27,7 +27,10 @@ def register_bitcoin_routes(app: FastAPI) -> None:
         payment_request: str
 
     @app.post("/bitcoin/deposit")
-    async def post_deposit(body: CreateInvoiceRequest) -> CreateInvoiceResponse:
+    async def post_deposit(
+        body: CreateInvoiceRequest,
+        account_id: Annotated[str, Depends(get_account_id)],
+    ) -> CreateInvoiceResponse:
         invoice_id = uuid4().hex
 
         ln_bits = await create_invoice(
@@ -37,7 +40,7 @@ def register_bitcoin_routes(app: FastAPI) -> None:
 
         command = CreateInvoice(
             invoice_id=invoice_id,
-            account_id=body.account_id,
+            account_id=account_id,
             amount=body.amount,
             payment_request=ln_bits.payment_request,
             payment_hash=ln_bits.payment_hash,
@@ -82,13 +85,14 @@ def register_bitcoin_routes(app: FastAPI) -> None:
             )
         )
 
-    # TODO: Security
     class WithdrawRequest(BaseModel):
-        account_id: str
         encoded_invoice: str
 
     @app.post("/bitcoin/withdraw")
-    async def post_withdraw(body: WithdrawRequest) -> None:
+    async def post_withdraw(
+        body: WithdrawRequest,
+        account_id: Annotated[str, Depends(get_account_id)],
+    ) -> None:
         invoice_id = uuid4().hex
         invoice = bolt11.decode(body.encoded_invoice)
         amount = int(invoice.amount_msat / 1000)
@@ -98,7 +102,7 @@ def register_bitcoin_routes(app: FastAPI) -> None:
 
         command = CreateInvoice(
             invoice_id=invoice_id,
-            account_id=body.account_id,
+            account_id=account_id,
             amount=amount,
             payment_request=body.encoded_invoice,
             payment_hash=invoice.payment_hash,

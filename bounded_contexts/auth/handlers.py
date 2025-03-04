@@ -3,7 +3,6 @@ from bounded_contexts.auth.commands import RegisterAccount
 from bounded_contexts.auth.events import SignupEvent
 from bounded_contexts.auth.repositories import account_repository
 from infrastructure.event_bus import UnitOfWork, event_bus
-from utils.hash_utils import HashUtils
 
 
 async def handle_register(
@@ -17,12 +16,10 @@ async def handle_register(
     if existing_account:
         raise ValueError("Account with this username already exists")
 
-    hashed_password = await HashUtils.hash(command.password)
-
     account = Account(
         account_id=command.account_id,
         username=command.username.lower(),
-        password=hashed_password,
+        password=command.hashed_password,
     )
 
     await account_repository(uow).save(account)

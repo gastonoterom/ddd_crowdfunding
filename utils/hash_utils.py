@@ -1,10 +1,14 @@
-# TODO: Real hashing
+import bcrypt
+
+
 class HashUtils:
 
     @staticmethod
     async def hash(plain_text: str) -> str:
-        return plain_text
+        # TODO: run in executor so as to not block the event loop
+        return bcrypt.hashpw(plain_text.encode(), bcrypt.gensalt()).decode()
 
     @staticmethod
     async def verify(plain_text: str, hashed_text: str) -> bool:
-        return plain_text == hashed_text
+        # TODO: run in executor so as to not block the event loop
+        return bcrypt.checkpw(plain_text.encode(), hashed_text.encode())

@@ -7,6 +7,7 @@ from typing import AsyncGenerator
 import asyncpg
 from asyncpg import Connection
 from asyncpg.transaction import Transaction
+from retry import retry
 
 from infrastructure.postgres import postgres_pool
 
@@ -147,6 +148,13 @@ class EventBus:
 
         self._event_handlers[event].append(handler)
 
+    @retry(
+        # TODO: Add custom exceptions
+        # exceptions=DBSerializationError,
+        tries=3,
+        delay=0.1,
+        jitter=0.1,
+    )
     async def handle(self, message: Message) -> None:
         async with make_unit_of_work() as uow:
             messages: list[Message] = [message]

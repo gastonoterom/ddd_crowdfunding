@@ -36,6 +36,8 @@ class Account:
     def version(self) -> int:
         return self._version
 
+    # TODO: Not concurrent
+    # Deposits should be safe to apply concurrently (just check for duplicates)
     def deposit(self, deposit: Deposit) -> None:
         # Ignore duplicate deposits
         for previous_deposit in self._deposits:
@@ -45,6 +47,7 @@ class Account:
         self._deposits.append(deposit)
         self._version += 1
 
+    # TODO: Only apply concurrency locks in withdrawals
     def withdraw(self, withdrawal: Withdrawal) -> None:
         # Ignore duplicate withdrawals
         for previous_withdrawal in self._withdrawals:

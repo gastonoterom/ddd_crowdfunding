@@ -7,4 +7,4 @@ from infrastructure.event_bus import Command
 class RegisterAccount(Command):
     account_id: str
     username: str
-    password: str
+    hashed_password: str
