@@ -15,7 +15,6 @@ class Withdrawal:
     amount: int
 
 
-# TODO: we can also use tigerbeetle for accounting
 class Account(Aggregate):
     def __init__(
         self,
@@ -39,8 +38,6 @@ class Account(Aggregate):
     def version(self) -> int:
         return self._version
 
-    # TODO: Not concurrent
-    # Deposits should be safe to apply concurrently (just check for duplicates)
     def deposit(self, deposit: Deposit) -> None:
         # Ignore duplicate deposits
         for previous_deposit in self._deposits:
@@ -50,7 +47,6 @@ class Account(Aggregate):
         self._deposits.append(deposit)
         self._version += 1
 
-    # TODO: Only apply concurrency locks in withdrawals
     def withdraw(self, withdrawal: Withdrawal) -> None:
         # Ignore duplicate withdrawals
         for previous_withdrawal in self._withdrawals:

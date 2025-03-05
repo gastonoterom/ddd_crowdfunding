@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 import httpx
 
+# TODO: ENV variables
 LNBITS_API_URL = "https://demo.lnbits.com/api/v1/payments"
 ADMIN_KEY = "5847740bd3f14c40b57c198440050d4c"
 INVOICE_KEY = "8bf12cd6363d48be8ccb52d01f0678bb"
