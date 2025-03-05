@@ -26,10 +26,10 @@ class PostgresCampaignViewFactory(CampaignViewFactory):
                     c.description, 
                     c.goal, 
                     c.total_raised, 
-                    a.entity_id as creator_account_id, 
-                    c.username as creator_username  
+                    a.account_id as creator_account_id, 
+                    a.username as creator_username  
                 FROM campaigns c
-                JOIN auth_accounts a ON c.account_id = a.entity_id
+                JOIN auth_accounts a ON c.account_id = a.account_id
                 WHERE entity_id = $1
                 """,
                 campaign_id,
@@ -49,10 +49,10 @@ class PostgresCampaignViewFactory(CampaignViewFactory):
                     c.description, 
                     c.goal, 
                     c.total_raised, 
-                    a.entity_id as creator_account_id, 
-                    c.username as creator_username  
+                    a.account_id as creator_account_id, 
+                    a.username as creator_username  
                 FROM campaigns c
-                JOIN auth_accounts a ON c.account_id = a.entity_id
+                JOIN auth_accounts a ON c.account_id = a.account_id
                 """,
             )
 

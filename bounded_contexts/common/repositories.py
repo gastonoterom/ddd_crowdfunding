@@ -11,7 +11,7 @@ class Repository[T: Aggregate](ABC):
         self.__uow = uow
 
     def __track_object(self, obj: T) -> None:
-        self.__uow.add_dirty_object(obj, lambda: self._update(obj))
+        self.__uow.track_object(obj, lambda: self._update(obj))
 
     async def find_by_id(self, entity_id: str) -> T | None:
         obj = await self._find_by_id(entity_id)

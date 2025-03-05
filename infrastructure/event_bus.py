@@ -34,9 +34,9 @@ class Event(Message):
 class UnitOfWork(ABC):
     def __init__(self) -> None:
         self._messages: list[Message] = []
-        # Dirty objects are objects that have been modified and need to be persisted,
-        # along with a callback that will do the actual persistence
-        self._dirty_objects: list[tuple[object, Callable]] = []
+        # Tracked objects are objects that have been retrieved or created and need to be persisted,
+        # (along with a callback that will do the actual persistence)
+        self._tracked_objects: list[tuple[object, Callable]] = []
 
     def emit(self, message: Message) -> None:
         self._messages.append(message)
@@ -46,13 +46,13 @@ class UnitOfWork(ABC):
         self._messages = []
         return messages
 
-    def add_dirty_object(self, obj: object, callback: Callable) -> None:
-        self._dirty_objects.append((obj, callback))
+    def track_object(self, obj: object, callback: Callable) -> None:
+        self._tracked_objects.append((obj, callback))
 
     @abstractmethod
     async def commit(self) -> None:
-        for obj, persistence_callback in self._dirty_objects:
-            await persistence_callback(obj)
+        for obj, persistence_callback in self._tracked_objects:
+            await persistence_callback()
 
     @abstractmethod
     async def rollback(self) -> None:
