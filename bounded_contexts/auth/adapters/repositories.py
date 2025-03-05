@@ -1,42 +1,20 @@
-from abc import ABC, abstractmethod
-
 from bounded_contexts.auth.aggregates import Account
+from bounded_contexts.auth.ports.repositories import AccountRepository
 from infrastructure.event_bus import UnitOfWork, PostgresUnitOfWork
-
-
-# Abstract repository
-class AccountRepository(ABC):
-
-    @abstractmethod
-    async def find_by_username(self, username: str) -> Account | None:
-        pass
-
-    @abstractmethod
-    async def save(self, account: Account) -> None:
-        pass
 
 
 # Postgres implementation
 class PostgresAccountRepository(AccountRepository):
 
     def __init__(self, uow: PostgresUnitOfWork) -> None:
+        super().__init__(uow)
         self.uow = uow
 
-    @staticmethod
-    def repository_ddl() -> str:
-        return """
-        CREATE TABLE IF NOT EXISTS auth_accounts (
-            account_id VARCHAR PRIMARY KEY,
-            username VARCHAR NOT NULL UNIQUE,
-            password VARCHAR NOT NULL
-        );
-        """
-
-    async def find_by_username(self, username: str) -> Account | None:
+    async def _find_by_id(self, entity_id: str) -> Account | None:
 
         row = await self.uow.conn.fetchrow(
-            "SELECT account_id, username, password FROM auth_accounts WHERE username = $1",
-            username,
+            "SELECT account_id, username, password FROM auth_accounts WHERE account_id = $1",
+            entity_id,
         )
 
         if row is None:
@@ -48,16 +26,24 @@ class PostgresAccountRepository(AccountRepository):
             password=row["password"],
         )
 
-    async def save(self, account: Account) -> None:
+    async def _add(self, entity: Account) -> None:
         await self.uow.conn.execute(
             """
             INSERT INTO auth_accounts (account_id, username, password)
             VALUES ($1, $2, $3)
             """,
-            account.account_id,
-            account.username,
-            account.password,
+            entity.account_id,
+            entity.username,
+            entity.password,
         )
+
+    # TODO: This method
+    async def _update(self, entity: Account) -> None:
+        raise NotImplementedError()
+
+    # TODO: This doesn't belong here
+    async def find_by_username(self, username: str) -> Account | None:
+        raise NotImplementedError()
 
 
 # Account repository factory, based on the type of UnitOfWork

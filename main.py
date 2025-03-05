@@ -1,50 +1,41 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from bounded_contexts.accounting.handlers import register_accounting_handlers
+from bounded_contexts.auth.adapters.rest import auth_router
 from bounded_contexts.auth.handlers import register_auth_handlers
-from bounded_contexts.auth.repositories import (
-    PostgresAccountRepository as PostgresAuthAccountRepository,
-)
-from bounded_contexts.accounting.repositories import (
-    PostgresAccountRepository as PostgresAccountingAccountRepository,
-)
-from bounded_contexts.auth.rest import register_auth_routes
-from bounded_contexts.bitcoin.repositories import PostgresInvoiceRepository
-from bounded_contexts.bitcoin.rest import register_bitcoin_routes
+from bounded_contexts.bitcoin.adapters.rest import bitcoin_router
+from bounded_contexts.crowdfunding.adapters.rest import crowdfunding_router
 from bounded_contexts.crowdfunding.handlers import register_crowdfunding_handlers
-from bounded_contexts.crowdfunding.repositories import PostgresCampaignRepository
-from bounded_contexts.crowdfunding.rest import register_crowdfunding_routes
 from bounded_contexts.bitcoin.handlers import register_bitcoin_handlers
-from infrastructure.event_bus import make_unit_of_work
-
-# TODO: Error handling
-app = FastAPI()
+from infrastructure.postgres import postgres_pool, execute_ddl
 
 
-# TODO: Better coverage
+# Context manager for our fastapi application, we want to
+# start the postgres connection pool and run the DDLs before the app
+# and close the connection pool after it is shutdown
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await postgres_pool.start_pool()
+    await execute_ddl()
+
+    yield
+
+    # Close the connection pool
+    await postgres_pool.cleanup()
 
 
-# TODO: Reconsider this, and hide behind some kind of configuration (also, on_event is deprecated)
-# Run DDL
-@app.on_event("startup")
-async def startup():
-    async with make_unit_of_work() as uow:
-        for ddl in [
-            PostgresAuthAccountRepository.repository_ddl(),
-            PostgresAccountingAccountRepository.repository_ddl(),
-            PostgresCampaignRepository.repository_ddl(),
-            PostgresInvoiceRepository.repository_ddl(),
-        ]:
-            await uow.conn.execute(ddl)
-
-
-# Register command handlers
+# Register message handlers
 register_auth_handlers()
 register_accounting_handlers()
 register_crowdfunding_handlers()
 register_bitcoin_handlers()
 
-# Register API routes
-register_auth_routes(app)
-register_crowdfunding_routes(app)
-register_bitcoin_routes(app)
+# Create FastApi application
+app = FastAPI(lifespan=lifespan)
+
+# Register fastapi routers
+app.include_router(auth_router)
+app.include_router(crowdfunding_router)
+app.include_router(bitcoin_router)

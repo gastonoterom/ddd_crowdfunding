@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 
+from bounded_contexts.auth.adapters.repositories import account_repository
 from bounded_contexts.auth.aggregates import Account
-from bounded_contexts.auth.repositories import account_repository
 from infrastructure.event_bus import make_unit_of_work
-from utils.hash_utils import HashUtils
-from utils.jwt import JWTUtils
+from infrastructure.tools import verify_hash, create_jwt_token
 
 
 @dataclass(frozen=True)
@@ -14,6 +13,7 @@ class LoginTokenView:
 
 
 async def create_login_token_view(username: str, password: str) -> LoginTokenView:
+    # TODO: uow is overkill, use view factories
     async with make_unit_of_work() as uow:
         account: Account | None = await account_repository(uow).find_by_username(
             username=username,
@@ -22,7 +22,7 @@ async def create_login_token_view(username: str, password: str) -> LoginTokenVie
     if account is None:
         raise Exception(f"Invalid login.")
 
-    valid_hash = await HashUtils.verify(
+    valid_hash = await verify_hash(
         plain_text=password,
         hashed_text=account.password,
     )
@@ -32,7 +32,5 @@ async def create_login_token_view(username: str, password: str) -> LoginTokenVie
 
     return LoginTokenView(
         account_id=account.account_id,
-        token=await JWTUtils.create_token(
-            payload={"account_id": account.account_id}
-        ),
+        token=await create_jwt_token(payload={"account_id": account.account_id}),
     )

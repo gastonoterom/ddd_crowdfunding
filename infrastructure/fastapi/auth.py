@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from starlette import status
 
-from utils.jwt import JWTUtils
+from infrastructure.tools import decode_jwt_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -18,7 +18,7 @@ async def get_account_id(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
     )
 
     try:
-        payload = await JWTUtils.decode_token(token)
+        payload = await decode_jwt_token(token)
 
         account_id = payload.get("account_id")
 

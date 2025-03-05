@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from bounded_contexts.common.aggregates import Aggregate
+
 
 @dataclass(frozen=True)
 class Deposit:
@@ -13,7 +15,8 @@ class Withdrawal:
     amount: int
 
 
-class Account:
+# TODO: we can also use tigerbeetle for accounting
+class Account(Aggregate):
     def __init__(
         self,
         account_id: str,
@@ -21,7 +24,7 @@ class Account:
         withdrawals: list[Withdrawal] | None = None,
         version: int = 1,
     ) -> None:
-        self._account_id = account_id
+        super().__init__(entity_id=account_id)
 
         self._version = version
 
@@ -30,7 +33,7 @@ class Account:
 
     @property
     def account_id(self) -> str:
-        return self._account_id
+        return self.entity_id
 
     @property
     def version(self) -> int:

@@ -1,4 +1,3 @@
-# TODO: create 'messages' package in all other domains
 from dataclasses import dataclass
 
 from bounded_contexts.bitcoin.aggregates import InvoiceType

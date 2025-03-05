@@ -1,7 +1,6 @@
+from bounded_contexts.auth.adapters.repositories import account_repository
 from bounded_contexts.auth.aggregates import Account
-from bounded_contexts.auth.commands import RegisterAccount
-from bounded_contexts.auth.events import SignupEvent
-from bounded_contexts.auth.repositories import account_repository
+from bounded_contexts.auth.messages import RegisterAccount, SignupEvent
 from infrastructure.event_bus import UnitOfWork, event_bus
 
 
@@ -13,8 +12,9 @@ async def handle_register(
         command.username
     )
 
-    if existing_account:
-        raise ValueError("Account with this username already exists")
+    assert (
+        existing_account is None
+    ), f"Account with username {command.username} already exists"
 
     account = Account(
         account_id=command.account_id,
@@ -22,7 +22,7 @@ async def handle_register(
         password=command.hashed_password,
     )
 
-    await account_repository(uow).save(account)
+    await account_repository(uow).add(account)
 
     uow.emit(SignupEvent(account_id=account.account_id))
 

@@ -1,17 +1,17 @@
+from bounded_contexts.accounting.adapters.repositories import account_repository
 from bounded_contexts.accounting.aggregates import (
     Account,
     account_transfer,
     Deposit,
     Withdrawal,
 )
-from bounded_contexts.accounting.repositories import account_repository
-from bounded_contexts.auth.events import SignupEvent
+from bounded_contexts.auth.messages import SignupEvent
 from bounded_contexts.bitcoin.aggregates import InvoiceType
 from bounded_contexts.bitcoin.messages import (
     DepositInvoicePaidEvent,
     WithdrawalCreatedEvent,
 )
-from bounded_contexts.crowdfunding.events import DonationCreatedEvent
+from bounded_contexts.crowdfunding.messages import DonationCreatedEvent
 from infrastructure.event_bus import UnitOfWork, event_bus
 
 
@@ -24,10 +24,8 @@ async def handle_account_created_event(uow: UnitOfWork, event: SignupEvent) -> N
 async def handle_donation_created_event(
     uow: UnitOfWork, event: DonationCreatedEvent
 ) -> None:
-    donor = await account_repository(uow).find_by_account_id(event.donor_account_id)
-    recipient = await account_repository(uow).find_by_account_id(
-        event.recipient_account_id
-    )
+    donor = await account_repository(uow).find_by_id(event.donor_account_id)
+    recipient = await account_repository(uow).find_by_id(event.recipient_account_id)
 
     assert donor and recipient
 
@@ -38,9 +36,6 @@ async def handle_donation_created_event(
         amount=event.amount,
     )
 
-    await account_repository(uow).update(donor)
-    await account_repository(uow).update(recipient)
-
 
 async def handle_invoice_paid_event(
     uow: UnitOfWork,
@@ -48,7 +43,7 @@ async def handle_invoice_paid_event(
 ) -> None:
     assert event.invoice_type == InvoiceType.DEPOSIT
 
-    account = await account_repository(uow).find_by_account_id(event.account_id)
+    account = await account_repository(uow).find_by_id(event.account_id)
 
     assert account
 
@@ -59,8 +54,6 @@ async def handle_invoice_paid_event(
         )
     )
 
-    await account_repository(uow).update(account)
-
 
 async def handle_withdrawal_crated_event(
     uow: UnitOfWork,
@@ -68,7 +61,7 @@ async def handle_withdrawal_crated_event(
 ) -> None:
     assert event.invoice_type == InvoiceType.WITHDRAWAL
 
-    account = await account_repository(uow).find_by_account_id(event.account_id)
+    account = await account_repository(uow).find_by_id(event.account_id)
 
     assert account
 
@@ -78,8 +71,6 @@ async def handle_withdrawal_crated_event(
             amount=event.amount,
         )
     )
-
-    await account_repository(uow).update(account)
 
 
 def register_accounting_handlers() -> None:

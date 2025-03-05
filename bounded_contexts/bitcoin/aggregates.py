@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+from bounded_contexts.common.aggregates import Aggregate
+
 
 class InvoiceStatus(StrEnum):
     PENDING = "PENDING"
@@ -11,9 +13,10 @@ class InvoiceType(StrEnum):
     WITHDRAWAL = "WITHDRAWAL"
 
 
-class BTCInvoice:
+class BTCInvoice(Aggregate):
     def __init__(
         self,
+        # TODO: Use payment hash for this
         invoice_id: str,
         account_id: str,
         amount: int,
@@ -22,7 +25,7 @@ class BTCInvoice:
         status: InvoiceStatus,
         invoice_type: InvoiceType,
     ) -> None:
-        self._invoice_id = invoice_id
+        super().__init__(invoice_id)
         self._account_id = account_id
         self._amount = amount
         self._status = status
@@ -35,7 +38,7 @@ class BTCInvoice:
 
     @property
     def invoice_id(self) -> str:
-        return self._invoice_id
+        return self.entity_id
 
     @property
     def account_id(self) -> str:

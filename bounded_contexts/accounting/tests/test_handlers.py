@@ -1,5 +1,6 @@
 import pytest
 
+from bounded_contexts.accounting.adapters.repositories import account_repository
 from bounded_contexts.accounting.aggregates import Account, Deposit
 from bounded_contexts.accounting.handlers import (
     handle_account_created_event,
@@ -7,14 +8,13 @@ from bounded_contexts.accounting.handlers import (
     handle_invoice_paid_event,
     handle_withdrawal_crated_event,
 )
-from bounded_contexts.accounting.repositories import account_repository
-from bounded_contexts.auth.events import SignupEvent
+from bounded_contexts.auth.messages import SignupEvent
 from bounded_contexts.bitcoin.aggregates import InvoiceType
 from bounded_contexts.bitcoin.messages import (
     DepositInvoicePaidEvent,
     WithdrawalCreatedEvent,
 )
-from bounded_contexts.crowdfunding.events import DonationCreatedEvent
+from bounded_contexts.crowdfunding.messages import DonationCreatedEvent
 from infrastructure.event_bus import make_unit_of_work
 
 
@@ -31,9 +31,11 @@ async def test_handle_account_created_event() -> None:
     async with make_unit_of_work() as uow:
         await handle_account_created_event(uow, event)
 
-        account = await account_repository(uow).find_by_account_id(
-            account_id=account_id,
+        account = await account_repository(uow).find_by_id(
+            entity_id=account_id,
         )
+
+        assert account
 
         assert account.account_id == account_id
         assert account.available_funds == 0
@@ -42,8 +44,10 @@ async def test_handle_account_created_event() -> None:
 @pytest.mark.asyncio
 async def test_handle_donation_created_event() -> None:
     async with make_unit_of_work() as uow:
-        account_1 = Account(account_id=account_id)
-        account_2 = Account(account_id=account_2_id)
+        account_1: Account | None = Account(account_id=account_id)
+        account_2: Account | None = Account(account_id=account_2_id)
+
+        assert account_1 and account_2
 
         account_1.deposit(Deposit(idempotency_key=idempotency_key, amount=150))
 
@@ -60,16 +64,20 @@ async def test_handle_donation_created_event() -> None:
     async with make_unit_of_work() as uow:
         await handle_donation_created_event(uow, event)
 
-        account_1 = await account_repository(uow).find_by_account_id(
-            account_id=account_id,
+        account_1 = await account_repository(uow).find_by_id(
+            entity_id=account_id,
         )
+
+        assert account_1
 
         assert account_1.account_id == account_id
         assert account_1.available_funds == 50
 
-        account_2 = await account_repository(uow).find_by_account_id(
-            account_id=account_2_id,
+        account_2 = await account_repository(uow).find_by_id(
+            entity_id=account_2_id,
         )
+
+        assert account_2
 
         assert account_2.account_id == account_2_id
         assert account_2.available_funds == 100
@@ -78,7 +86,8 @@ async def test_handle_donation_created_event() -> None:
 @pytest.mark.asyncio
 async def test_handle_invoice_paid_event() -> None:
     async with make_unit_of_work() as uow:
-        account_1 = Account(account_id=account_id)
+        account_1: Account | None = Account(account_id=account_id)
+        assert account_1
         await account_repository(uow).add(account_1)
 
     event = DepositInvoicePaidEvent(
@@ -91,9 +100,11 @@ async def test_handle_invoice_paid_event() -> None:
     async with make_unit_of_work() as uow:
         await handle_invoice_paid_event(uow, event)
 
-        account_1 = await account_repository(uow).find_by_account_id(
-            account_id=account_id,
+        account_1 = await account_repository(uow).find_by_id(
+            entity_id=account_id,
         )
+
+        assert account_1
 
         assert account_1.account_id == account_id
         assert account_1.available_funds == 50
@@ -102,7 +113,9 @@ async def test_handle_invoice_paid_event() -> None:
 @pytest.mark.asyncio
 async def test_handle_withdrawal_crated_event() -> None:
     async with make_unit_of_work() as uow:
-        account_1 = Account(account_id=account_id)
+        account_1: Account | None = Account(account_id=account_id)
+        assert account_1
+
         account_1.deposit(Deposit(idempotency_key, 100))
         await account_repository(uow).add(account_1)
 
@@ -116,9 +129,11 @@ async def test_handle_withdrawal_crated_event() -> None:
     async with make_unit_of_work() as uow:
         await handle_withdrawal_crated_event(uow, event)
 
-        account_1 = await account_repository(uow).find_by_account_id(
-            account_id=account_id,
+        account_1 = await account_repository(uow).find_by_id(
+            entity_id=account_id,
         )
+
+        assert account_1
 
         assert account_1.account_id == account_id
         assert account_1.available_funds == 30

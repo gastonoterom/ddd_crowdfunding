@@ -2,7 +2,7 @@ import contextlib
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable
 
 import asyncpg
 from asyncpg import Connection
@@ -34,6 +34,9 @@ class Event(Message):
 class UnitOfWork(ABC):
     def __init__(self) -> None:
         self._messages: list[Message] = []
+        # Dirty objects are objects that have been modified and need to be persisted,
+        # along with a callback that will do the actual persistence
+        self._dirty_objects: list[tuple[object, Callable]] = []
 
     def emit(self, message: Message) -> None:
         self._messages.append(message)
@@ -43,9 +46,13 @@ class UnitOfWork(ABC):
         self._messages = []
         return messages
 
+    def add_dirty_object(self, obj: object, callback: Callable) -> None:
+        self._dirty_objects.append((obj, callback))
+
     @abstractmethod
     async def commit(self) -> None:
-        pass
+        for obj, persistence_callback in self._dirty_objects:
+            await persistence_callback(obj)
 
     @abstractmethod
     async def rollback(self) -> None:
@@ -64,11 +71,12 @@ class PostgresUnitOfWork(UnitOfWork):
         return self.__conn
 
     async def commit(self) -> None:
+        await super().commit()
         await self.__transaction.commit()
 
     async def rollback(self) -> None:
-        await self.__transaction.rollback()
         await super().rollback()
+        await self.__transaction.rollback()
 
 
 # Mock UOW for unit tests
@@ -85,20 +93,18 @@ class MockUnitOfWork(UnitOfWork):
 
 # Unit Of Work context manager:
 @contextlib.asynccontextmanager
-async def make_postgres_unit_of_work() -> AsyncGenerator[UnitOfWork, None]:
+async def make_postgres_unit_of_work() -> AsyncGenerator[PostgresUnitOfWork, None]:
     # TODO: Prevent transactions inside transactions
 
-    pool = postgres_pool.pool
-
-    if pool is None:
-        pool = await postgres_pool.start_pool()
-
-    async with pool.acquire() as conn:
+    async with postgres_pool.get_pool().acquire() as conn:
         # TODO: Set isolation level to repeatable read
         transaction = conn.transaction()
         await transaction.start()
 
-        uow = PostgresUnitOfWork(conn, transaction)
+        uow = PostgresUnitOfWork(
+            conn,  # type: ignore
+            transaction,
+        )
 
         try:
             yield uow
@@ -117,11 +123,14 @@ async def make_mock_unit_of_work() -> AsyncGenerator[MockUnitOfWork, None]:
 
 
 # TODO: Not the most reliable way, hide behind an abstraction
+make_unit_of_work: Callable[
+    [], contextlib.AbstractAsyncContextManager[UnitOfWork, None]
+]
 if "pytest" in sys.modules:
-    make_unit_of_work = make_mock_unit_of_work
+    make_unit_of_work = make_mock_unit_of_work  # type: ignore
 
 else:
-    make_unit_of_work = make_postgres_unit_of_work
+    make_unit_of_work = make_postgres_unit_of_work  # type: ignore
 
 
 # The event bus: handles a message, dispatches it to the right handler,
@@ -130,27 +139,25 @@ else:
 class EventBus:
     def __init__(
         self,
-    ):
-        # TODO: Better typing
+    ) -> None:
         # Commands can have 1 and only 1 handler
-        self._command_handlers: dict[type[Command], callable] = {}
+        self._command_handlers: dict[type[Command], Callable] = {}
+
         # Events can have N handlers
-        self._event_handlers: dict[type[Event], list[callable]] = {}
+        self._event_handlers: dict[type[Event], list[Callable]] = {}
 
     def register_command_handler(
-        self, command: type[Command], handler: callable
+        self, command: type[Command], handler: Callable
     ) -> None:
         self._command_handlers[command] = handler
 
-    def register_event_handler(self, event: type[Event], handler: callable) -> None:
+    def register_event_handler(self, event: type[Event], handler: Callable) -> None:
         if event not in self._event_handlers:
             self._event_handlers[event] = []
 
         self._event_handlers[event].append(handler)
 
     @retry(
-        # TODO: Add custom exceptions
-        # exceptions=DBSerializationError,
         tries=3,
         delay=0.1,
         jitter=0.1,

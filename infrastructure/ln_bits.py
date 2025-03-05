@@ -1,3 +1,4 @@
+# TODO: This is an adapter, move elsewhere
 from dataclasses import dataclass
 
 import httpx
