@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 
 from bounded_contexts.accounting.handlers import register_accounting_handlers
 from bounded_contexts.auth.adapters.rest import auth_router
