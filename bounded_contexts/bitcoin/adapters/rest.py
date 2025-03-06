@@ -12,7 +12,7 @@ from bounded_contexts.bitcoin.messages import (
     InvoiceType,
 )
 from bounded_contexts.bitcoin.views import get_invoice_view
-from infrastructure.event_bus import event_bus
+from infrastructure.events.bus import event_bus
 from infrastructure.fastapi import get_account_id
 from infrastructure.ln_bits import create_invoice, is_invoice_paid, pay_invoice
 

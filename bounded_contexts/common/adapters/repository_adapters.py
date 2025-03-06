@@ -1,5 +1,5 @@
 from bounded_contexts.common.aggregates import Aggregate
-from bounded_contexts.common.repositories import Repository
+from bounded_contexts.common.ports.repositories import Repository
 
 
 class MockRepository[T: Aggregate](Repository):

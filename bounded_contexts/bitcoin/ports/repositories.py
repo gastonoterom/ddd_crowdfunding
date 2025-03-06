@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 from bounded_contexts.bitcoin.aggregates import BTCInvoice
-from bounded_contexts.common.repositories import Repository
+from bounded_contexts.common.ports.repositories import Repository
 
 
 # Abstract repository

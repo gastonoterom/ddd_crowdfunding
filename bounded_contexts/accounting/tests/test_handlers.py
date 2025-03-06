@@ -15,7 +15,7 @@ from bounded_contexts.bitcoin.messages import (
     WithdrawalCreatedEvent,
 )
 from bounded_contexts.crowdfunding.messages import DonationCreatedEvent
-from infrastructure.event_bus import make_unit_of_work
+from infrastructure.events.uow_factory import make_unit_of_work
 
 
 account_id = "account_id"

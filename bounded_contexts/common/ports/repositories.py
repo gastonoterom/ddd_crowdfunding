@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from bounded_contexts.common.aggregates import Aggregate
-from infrastructure.event_bus import UnitOfWork
+from infrastructure.events.unit_of_work import UnitOfWork
 
 
 # Generic abstract repository class

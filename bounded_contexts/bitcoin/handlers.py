@@ -5,7 +5,8 @@ from bounded_contexts.bitcoin.messages import (
     DepositInvoicePaidEvent,
     WithdrawalCreatedEvent,
 )
-from infrastructure.event_bus import UnitOfWork, event_bus
+from infrastructure.events.bus import event_bus
+from infrastructure.events.unit_of_work import UnitOfWork
 
 
 async def handle_create_invoice(uow: UnitOfWork, command: CreateInvoice) -> None:

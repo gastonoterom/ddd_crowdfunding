@@ -1,6 +1,6 @@
 from bounded_contexts.auth.aggregates import Account
 from bounded_contexts.auth.ports.repositories import AccountRepository
-from infrastructure.event_bus import UnitOfWork, PostgresUnitOfWork
+from infrastructure.events.unit_of_work import UnitOfWork, PostgresUnitOfWork
 
 
 # Postgres implementation

@@ -3,7 +3,11 @@ import json
 from bounded_contexts.common.adapters.repository_adapters import MockRepository
 from bounded_contexts.crowdfunding.aggregates import Campaign, Donation
 from bounded_contexts.crowdfunding.ports.repositories import CampaignRepository
-from infrastructure.event_bus import PostgresUnitOfWork, UnitOfWork, MockUnitOfWork
+from infrastructure.events.unit_of_work import (
+    PostgresUnitOfWork,
+    UnitOfWork,
+    MockUnitOfWork,
+)
 
 
 class PostgresCampaignRepository(CampaignRepository):

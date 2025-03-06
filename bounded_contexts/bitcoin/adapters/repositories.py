@@ -1,6 +1,6 @@
 from bounded_contexts.bitcoin.aggregates import BTCInvoice, InvoiceStatus, InvoiceType
 from bounded_contexts.bitcoin.ports.repositories import InvoiceRepository
-from infrastructure.event_bus import PostgresUnitOfWork, UnitOfWork
+from infrastructure.events.unit_of_work import PostgresUnitOfWork, UnitOfWork
 
 
 class PostgresInvoiceRepository(InvoiceRepository):

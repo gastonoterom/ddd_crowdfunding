@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from infrastructure.event_bus import Command, Event
+from infrastructure.events.messages import Command, Event
 
 
 @dataclass(frozen=True)

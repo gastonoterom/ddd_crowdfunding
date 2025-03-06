@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from bounded_contexts.crowdfunding.adapters.view_factories import campaign_view_factory
 from bounded_contexts.crowdfunding.messages import CreateCampaign, DonateToCampaign
 from bounded_contexts.crowdfunding.views import CampaignView
-from infrastructure.event_bus import event_bus
+from infrastructure.events.bus import event_bus
 from infrastructure.fastapi import get_account_id
 
 

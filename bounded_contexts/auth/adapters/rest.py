@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from bounded_contexts.auth.messages import RegisterAccount
 from bounded_contexts.auth.views import create_login_token_view
-from infrastructure.event_bus import event_bus
+from infrastructure.events.bus import event_bus
 from infrastructure.tools import hash_text
 
 

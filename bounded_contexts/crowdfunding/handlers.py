@@ -7,7 +7,8 @@ from bounded_contexts.crowdfunding.messages import (
     DonateToCampaign,
     DonationCreatedEvent,
 )
-from infrastructure.event_bus import UnitOfWork, event_bus
+from infrastructure.events.bus import event_bus
+from infrastructure.events.unit_of_work import UnitOfWork
 
 
 async def create_campaign_handler(uow: UnitOfWork, command: CreateCampaign) -> None:

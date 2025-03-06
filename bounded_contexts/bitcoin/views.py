@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from bounded_contexts.bitcoin.adapters.repositories import invoice_repository
 from bounded_contexts.bitcoin.aggregates import BTCInvoice, InvoiceType
-from infrastructure.event_bus import make_unit_of_work
+from infrastructure.events.uow_factory import make_unit_of_work
 
 
 @dataclass(frozen=True)

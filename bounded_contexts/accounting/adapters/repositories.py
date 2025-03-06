@@ -3,7 +3,11 @@ import json
 from bounded_contexts.accounting.aggregates import Account, Deposit, Withdrawal
 from bounded_contexts.accounting.ports.repositories import AccountRepository
 from bounded_contexts.common.adapters.repository_adapters import MockRepository
-from infrastructure.event_bus import UnitOfWork, PostgresUnitOfWork, MockUnitOfWork
+from infrastructure.events.unit_of_work import (
+    UnitOfWork,
+    PostgresUnitOfWork,
+    MockUnitOfWork,
+)
 
 
 # Postgres implementation
