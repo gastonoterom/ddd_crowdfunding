@@ -66,11 +66,9 @@ class PostgresUnitOfWork(UnitOfWork):
         return self.__conn
 
     async def _commit(self) -> None:
-        await super().commit()
         await self.__transaction.commit()
 
     async def _rollback(self) -> None:
-        await super().rollback()
         await self.__transaction.rollback()
 
 

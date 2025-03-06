@@ -1,4 +1,6 @@
 import asyncio
+import pickle
+from asyncio import sleep
 
 from bounded_contexts.common.ports.outbox import (
     TransactionalOutbox,
@@ -16,15 +18,14 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
         self.uow = uow
 
     async def store(self, messages: list[Message]) -> None:
-        # TODO: batch insert
+        # TODO: batch insert and ignore duplicates
         for message in messages:
             await self.uow.conn.execute(
-                """INSERT INTO outbox_messages (message_id, message_type, message_data) 
-                VALUES ($1, $2, $3)""",
-                # TODO: This
-                message.id,  # type: ignore
-                message.type,  # type: ignore
-                message.data,  # type: ignore
+                """INSERT INTO outbox_messages (message_id, message_data) 
+                VALUES ($1, $2)""",
+                message.message_id,
+                # TODO: DONT USE PICKLE!!!!!!!!!! UNSAFE!!!!!!
+                pickle.dumps(message),
             )
 
 
@@ -38,18 +39,22 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
 
     async def _fetch_messages(self) -> list[Message]:
         async with postgres_pool.get_pool().acquire() as conn:
-            # TODO: This
-            rows = await conn.fetch("")
+            rows = await conn.fetch(
+                """
+                SELECT message_id, message_data
+                FROM outbox_messages
+            """
+            )
 
         return [self.__row_to_message(row) for row in rows]
 
     async def _dispatch_messages(self, messages: list[Message]) -> None:
+        # TODO: Log exceptions
+
         await asyncio.gather(
             *[event_bus.handle(message) for message in messages],
             return_exceptions=True,
         )
-
-        # TODO: Log exceptions
 
     async def _destroy_messages(self, messages: list[Message]) -> None:
         async with postgres_pool.get_pool().acquire() as conn:
@@ -61,7 +66,8 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
             )
 
     def __row_to_message(self, row: dict) -> Message:
-        raise NotImplementedError()
+        message_data = row["message_data"]
+        return pickle.loads(message_data)
 
 
 # TODO: Also do mock ones
@@ -72,3 +78,17 @@ def outbox(uow: UnitOfWork) -> TransactionalOutbox:
 
 def outbox_processor() -> TransactionalOutboxProcessor:
     return PostgresTransactionalOutboxProcessor()
+
+
+async def process_outbox() -> None:
+    # TODO: use logger!!
+
+    print("Starting outbox")
+    processor = outbox_processor()
+
+    while True:
+        print("Processing outbox")
+        await processor.process_messages()
+
+        print("Sleeping")
+        await sleep(1)

@@ -1,10 +1,8 @@
-import asyncio
 from typing import Callable
 
 from retry import retry
 
 from infrastructure.events.messages import Command, Event, Message
-from infrastructure.events.unit_of_work import UnitOfWork
 from infrastructure.events.uow_factory import make_unit_of_work
 
 
@@ -46,14 +44,21 @@ class EventBus:
 
     async def _handle_command(self, command: Command) -> None:
         handler = self._command_handlers[type(command)]
-        await handler(command)
+
+        async with make_unit_of_work() as uow:
+            await handler(uow, command)
 
     async def _handle_event(self, event: Event) -> None:
         handlers = self._event_handlers.get(type(event), [])
 
-        await asyncio.gather(
-            *[handler(event) for handler in handlers], return_exceptions=True
-        )
+        for handler in handlers:
+            async with make_unit_of_work() as uow:
+                await handler(uow, event)
+
+        # TODO: Asyncio gather, and create uows inside the events themselves (as not all handlers may need a uow)
+        # await asyncio.gather(
+        #     *[handler(event) for handler in handlers], return_exceptions=True
+        # )
 
         # TODO: log exceptions
 

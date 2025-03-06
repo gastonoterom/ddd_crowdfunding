@@ -10,17 +10,17 @@ async def handle_register(
     command: RegisterAccount,
 ) -> None:
     existing_account: Account | None = await account_repository(uow).find_by_username(
-        command["username"]
+        command.username
     )
 
     assert (
         existing_account is None
-    ), f"Account with username {command['username']} already exists"
+    ), f"Account with username {command.username} already exists"
 
     account = Account(
-        account_id=command["account_id"],
-        username=command["username"].lower(),
-        password=command["hashed_password"],
+        account_id=command.account_id,
+        username=command.username.lower(),
+        password=command.hashed_password,
     )
 
     await account_repository(uow).add(account)

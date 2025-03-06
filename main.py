@@ -1,11 +1,13 @@
+import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 
 from bounded_contexts.accounting.handlers import register_accounting_handlers
 from bounded_contexts.auth.adapters.rest import auth_router
 from bounded_contexts.auth.handlers import register_auth_handlers
 from bounded_contexts.bitcoin.adapters.rest import bitcoin_router
+from bounded_contexts.common.adapters.outbox_adapters import process_outbox
 from bounded_contexts.crowdfunding.adapters.rest import crowdfunding_router
 from bounded_contexts.crowdfunding.handlers import register_crowdfunding_handlers
 from bounded_contexts.bitcoin.handlers import register_bitcoin_handlers
@@ -15,10 +17,17 @@ from infrastructure.postgres import postgres_pool, execute_ddl
 # Context manager for our fastapi application, we want to
 # start the postgres connection pool and run the DDLs before the app
 # and close the connection pool after it is shutdown
+
+tasks = set()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await postgres_pool.start_pool()
     await execute_ddl()
+
+    # TODO: Manage this better
+    tasks.add(asyncio.create_task(process_outbox()))
 
     yield
 
@@ -34,6 +43,7 @@ register_bitcoin_handlers()
 
 # Create FastApi application
 app = FastAPI(lifespan=lifespan)
+
 
 # Register fastapi routers
 app.include_router(auth_router)
