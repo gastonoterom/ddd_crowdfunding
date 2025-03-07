@@ -12,7 +12,7 @@ class PostgresAccountViewFactory(AccountViewFactory):
                 SELECT 
                     a.account_id,
                     a.username
-                FROM accounts a
+                FROM auth_accounts a
                 WHERE account_id = $1
                 """,
                 account_id,
@@ -33,7 +33,7 @@ class PostgresAccountViewFactory(AccountViewFactory):
                     a.account_id,
                     a.username,
                     a.password
-                FROM accounts a
+                FROM auth_accounts a
                 WHERE username = $1
                 """,
                 username,
@@ -45,7 +45,7 @@ class PostgresAccountViewFactory(AccountViewFactory):
         return SensitiveAccountView(
             account_id=row["account_id"],
             username=row["username"],
-            password_hash=row["password_hash"],
+            password_hash=row["password"],
         )
 
 

@@ -74,7 +74,7 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
                 """
                 DELETE FROM outbox_messages WHERE message_id = ANY($1)
                 """,
-                [message.id for message in messages],  # type: ignore
+                [message.message_id for message in messages],  # type: ignore
             )
 
     def __row_to_message(self, row: dict) -> Message:

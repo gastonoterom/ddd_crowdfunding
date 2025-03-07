@@ -37,7 +37,8 @@ class PostgresAccountRepository(AccountRepository):
         )
 
     async def _update(self, entity: Account) -> None:
-        raise NotImplementedError()
+        # There is no current need to update the account
+        return
 
 
 # Account repository factory, based on the type of UnitOfWork
