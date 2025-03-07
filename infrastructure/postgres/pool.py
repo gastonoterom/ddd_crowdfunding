@@ -1,5 +1,7 @@
 from asyncpg import Pool, create_pool
 
+from config.env import environment
+
 
 class PostgresPool:
     def __init__(
@@ -24,5 +26,4 @@ class PostgresPool:
         self._pool = None
 
 
-# TODO: this is hardcoded
-postgres_pool = PostgresPool("postgresql://postgres:postgres@localhost:5432/postgres")
+postgres_pool = PostgresPool(environment.postgres_connection_url)

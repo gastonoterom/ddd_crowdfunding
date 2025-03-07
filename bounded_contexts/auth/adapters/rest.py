@@ -5,8 +5,10 @@ from fastapi import Depends, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
+from bounded_contexts.auth.adapters.view_factories import account_view_factory
 from bounded_contexts.auth.messages import RegisterAccount
-from bounded_contexts.auth.views import create_login_token_view
+from bounded_contexts.auth.queries import create_login_token_view
+from bounded_contexts.auth.views import AccountView
 from infrastructure.events.bus import event_bus
 from infrastructure.tools import hash_text
 
@@ -19,12 +21,8 @@ class RegisterRequest(BaseModel):
     password: str
 
 
-class RegisterResponse(BaseModel):
-    account_id: str
-
-
 @auth_router.post("/auth/register")
-async def register(body: RegisterRequest) -> RegisterResponse:
+async def register(body: RegisterRequest) -> AccountView:
     account_id = uuid4().hex
 
     hashed_password = await hash_text(body.password)
@@ -37,7 +35,7 @@ async def register(body: RegisterRequest) -> RegisterResponse:
 
     await event_bus.handle(command)
 
-    return RegisterResponse(account_id=account_id)
+    return await account_view_factory().create_view(account_id=account_id)
 
 
 # Fast API specific implementation

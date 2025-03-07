@@ -4,11 +4,12 @@ from bounded_contexts.accounting.aggregates import (
     account_transfer,
 )
 from bounded_contexts.accounting.messages import (
-    Transfer,
+    RequestTransferCommand,
     DepositCommand,
-    TransactionSucceeded,
+    WithdrawSucceededEvent,
     RequestWithdrawCommand,
-    TransactionRejected,
+    WithdrawRejectedEvent,
+    TransferSucceededEvent,
 )
 from bounded_contexts.auth.messages import SignupEvent
 from bounded_contexts.bitcoin.adapters.rest import WithdrawRequest
@@ -24,33 +25,30 @@ async def handle_account_created_event(uow: UnitOfWork, event: SignupEvent) -> N
 
 async def handle_transfer(
     uow: UnitOfWork,
-    command: Transfer,
+    command: RequestTransferCommand,
 ) -> None:
     initiator = await account_repository(uow).find_by_id(command.from_account_id)
     recipient = await account_repository(uow).find_by_id(command.to_account_id)
 
     assert initiator and recipient
 
-    try:
-        account_transfer(
+    account_transfer(
+        idempotency_key=command.idempotency_key,
+        from_account=initiator,
+        to_account=recipient,
+        amount=command.amount,
+        metadata=command.metadata,
+    )
+
+    uow.emit(
+        TransferSucceededEvent(
             idempotency_key=command.idempotency_key,
-            from_account=initiator,
-            to_account=recipient,
+            from_account_id=command.from_account_id,
+            to_account_id=command.to_account_id,
             amount=command.amount,
+            metadata=command.metadata,
         )
-
-        uow.emit(
-            TransactionSucceeded(
-                idempotency_key=command.idempotency_key,
-            )
-        )
-
-    except ValueError:
-        uow.emit(
-            TransactionRejected(
-                idempotency_key=command.idempotency_key,
-            )
-        )
+    )
 
 
 async def handle_deposit(
@@ -64,6 +62,7 @@ async def handle_deposit(
     account.deposit(
         idempotency_key=command.idempotency_key,
         amount=command.amount,
+        metadata={},
     )
 
 
@@ -79,18 +78,25 @@ async def handle_withdraw_request(
         account.withdraw(
             idempotency_key=event.idempotency_key,
             amount=event.amount,
+            metadata=event.metadata,
         )
 
         uow.emit(
-            TransactionSucceeded(
+            WithdrawSucceededEvent(
                 idempotency_key=event.idempotency_key,
+                account_id=event.account_id,
+                amount=event.amount,
+                metadata=event.metadata,
             )
         )
 
     except ValueError:
         uow.emit(
-            TransactionRejected(
+            WithdrawRejectedEvent(
                 idempotency_key=event.idempotency_key,
+                account_id=event.account_id,
+                amount=event.amount,
+                metadata=event.metadata,
             )
         )
 
@@ -98,14 +104,14 @@ async def handle_withdraw_request(
 def register_accounting_handlers() -> None:
     event_bus.register_event_handler(SignupEvent, handle_account_created_event)
 
-    event_bus.register_event_handler(
-        Transfer,
+    event_bus.register_command_handler(
+        RequestTransferCommand,
         handle_transfer,
     )
 
-    event_bus.register_event_handler(
+    event_bus.register_command_handler(
         DepositCommand,
         handle_deposit,
     )
 
-    event_bus.register_event_handler(WithdrawRequest, handle_withdraw_request)
+    event_bus.register_command_handler(RequestWithdrawCommand, handle_withdraw_request)

@@ -1,6 +1,6 @@
 import json
 
-from bounded_contexts.accounting.aggregates import Account, Deposit, Withdrawal
+from bounded_contexts.accounting.aggregates import Account, Transaction
 from bounded_contexts.accounting.ports.repositories import AccountRepository
 from bounded_contexts.common.adapters.repository_adapters import MockRepository
 from infrastructure.events.unit_of_work import (
@@ -20,7 +20,9 @@ class PostgresAccountRepository(AccountRepository):
     async def _find_by_id(self, entity_id: str) -> Account | None:
         row = await self.uow.conn.fetchrow(
             """
-            SELECT * FROM accounting_accounts WHERE account_id = $1
+            SELECT 
+                a.account_id, a.transactions, a.balance 
+            FROM accounting_accounts a WHERE account_id = $1
             """,
             entity_id,
         )
@@ -28,51 +30,46 @@ class PostgresAccountRepository(AccountRepository):
         if not row:
             return None
 
-        deposits = [Deposit(**deposit) for deposit in json.loads(row["deposits"])]
-        withdrawals = [
-            Withdrawal(**withdrawal) for withdrawal in json.loads(row["withdrawals"])
+        transactions = [
+            Transaction(**transaction)
+            for transaction in json.loads(row["transactions"])
         ]
 
         return Account(
             account_id=row["account_id"],
-            deposits=deposits,
-            withdrawals=withdrawals,
-            version=row["version"],
+            transactions=transactions,
+            balance=int(row["balance"]),
         )
 
     async def _add(self, entity: Account) -> None:
-        deposits = json.dumps([deposit.__dict__ for deposit in entity._deposits])
-        withdrawals = json.dumps(
-            [withdrawal.__dict__ for withdrawal in entity._withdrawals]
+        transactions = json.dumps(
+            [transaction.__dict__ for transaction in entity._transactions]
         )
 
         await self.uow.conn.execute(
             """
-            INSERT INTO accounting_accounts (account_id, deposits, withdrawals, version)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO accounting_accounts (account_id, transactions, balance)
+            VALUES ($1, $2, $3)
             """,
             entity.account_id,
-            deposits,
-            withdrawals,
-            entity._version,
+            transactions,
+            entity.balance,
         )
 
     async def _update(self, entity: Account) -> None:
-        deposits = json.dumps([deposit.__dict__ for deposit in entity._deposits])
-        withdrawals = json.dumps(
-            [withdrawal.__dict__ for withdrawal in entity._withdrawals]
+        transactions = json.dumps(
+            [transaction.__dict__ for transaction in entity._transactions]
         )
 
         await self.uow.conn.execute(
             """
             UPDATE accounting_accounts
-            SET deposits = $2, withdrawals = $3, version = $4
+            SET transactions = $2, balance = $3
             WHERE account_id = $1
             """,
             entity.account_id,
-            deposits,
-            withdrawals,
-            entity._version,
+            transactions,
+            entity.balance,
         )
 
 

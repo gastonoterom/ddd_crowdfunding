@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import pickle
 from asyncio import sleep
 
@@ -11,6 +12,8 @@ from infrastructure.events.messages import Message
 from infrastructure.events.unit_of_work import PostgresUnitOfWork, UnitOfWork
 from infrastructure.postgres import postgres_pool
 
+logger = logging.getLogger(__name__)
+
 
 class PostgresTransactionalOutbox(TransactionalOutbox):
     def __init__(self, uow: PostgresUnitOfWork) -> None:
@@ -18,15 +21,21 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
         self.uow = uow
 
     async def store(self, messages: list[Message]) -> None:
-        # TODO: batch insert and ignore duplicates
-        for message in messages:
-            await self.uow.conn.execute(
-                """INSERT INTO outbox_messages (message_id, message_data) 
-                VALUES ($1, $2)""",
-                message.message_id,
-                # TODO: DONT USE PICKLE!!!!!!!!!! UNSAFE!!!!!!
-                pickle.dumps(message),
-            )
+        if not messages:
+            return
+
+        # TODO: DONT USE PICKLE!!!!!!!!!! UNSAFE!!!!!!
+        records = [(message.message_id, pickle.dumps(message)) for message in messages]
+
+        # This uses a prepared statement under the hood, preventing SQL injection
+        await self.uow.conn.executemany(
+            """
+            INSERT INTO outbox_messages (message_id, message_data) 
+            VALUES ($1, $2)
+            ON CONFLICT (message_id) DO NOTHING
+            """,
+            records,
+        )
 
 
 class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
@@ -49,12 +58,15 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
         return [self.__row_to_message(row) for row in rows]
 
     async def _dispatch_messages(self, messages: list[Message]) -> None:
-        # TODO: Log exceptions
-
-        await asyncio.gather(
+        results = await asyncio.gather(
             *[event_bus.handle(message) for message in messages],
             return_exceptions=True,
         )
+
+        exceptions = [result for result in results if isinstance(result, Exception)]
+        if exceptions:
+            for exc in exceptions:
+                logger.error(f"Error processing message: {exc}")
 
     async def _destroy_messages(self, messages: list[Message]) -> None:
         async with postgres_pool.get_pool().acquire() as conn:
@@ -70,7 +82,6 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
         return pickle.loads(message_data)
 
 
-# TODO: Also do mock ones
 def outbox(uow: UnitOfWork) -> TransactionalOutbox:
     assert isinstance(uow, PostgresUnitOfWork)
     return PostgresTransactionalOutbox(uow)
@@ -81,14 +92,7 @@ def outbox_processor() -> TransactionalOutboxProcessor:
 
 
 async def process_outbox() -> None:
-    # TODO: use logger!!
-
-    print("Starting outbox")
     processor = outbox_processor()
-
     while True:
-        print("Processing outbox")
         await processor.process_messages()
-
-        print("Sleeping")
-        await sleep(1)
+        await sleep(0.1)

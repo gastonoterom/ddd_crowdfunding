@@ -9,3 +9,9 @@ class Aggregate(ABC):
     @property
     def entity_id(self) -> str:
         return self.__entity_id
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Aggregate):
+            return False
+
+        return self.entity_id == other.entity_id

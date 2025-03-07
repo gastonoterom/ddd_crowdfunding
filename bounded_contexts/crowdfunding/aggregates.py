@@ -56,12 +56,8 @@ class Campaign(Aggregate):
             if previous_donation.idempotency_key == donation.idempotency_key:
                 return
 
-        # Arbitrary rules, can be changed or replaced via inheritance
         if donation.account_id == self.account_id:
             raise ValueError("Can't donate to your own campaign")
-
-        if self.goal_reached():
-            raise ValueError("Campaign goal already reached")
 
         self._donations.append(donation)
         self._total_raised += donation.amount
