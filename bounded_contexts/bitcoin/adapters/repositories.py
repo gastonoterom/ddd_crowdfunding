@@ -21,7 +21,6 @@ class PostgresInvoiceRepository(InvoiceRepository):
             return None
 
         return BTCInvoice(
-            invoice_id=row["invoice_id"],
             account_id=row["account_id"],
             amount=int(row["amount"]),
             status=InvoiceStatus(row["status"]),
@@ -33,7 +32,7 @@ class PostgresInvoiceRepository(InvoiceRepository):
     async def _find_by_id(self, entity_id: str) -> BTCInvoice | None:
         row = await self.uow.conn.fetchrow(
             """
-            SELECT * FROM btc_invoices WHERE invoice_id = $1
+            SELECT * FROM btc_invoices WHERE payment_hash = $1
             """,
             entity_id,
         )
@@ -42,7 +41,6 @@ class PostgresInvoiceRepository(InvoiceRepository):
             return None
 
         return BTCInvoice(
-            invoice_id=row["invoice_id"],
             account_id=row["account_id"],
             amount=int(row["amount"]),
             status=InvoiceStatus(row["status"]),
@@ -55,11 +53,10 @@ class PostgresInvoiceRepository(InvoiceRepository):
         await self.uow.conn.execute(
             """
             INSERT INTO btc_invoices (
-                invoice_id, account_id, amount, status, payment_hash, payment_request, invoice_type
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                account_id, amount, status, payment_hash, payment_request, invoice_type
+            ) VALUES ($1, $2, $3, $4, $5, $6, )
 
             """,
-            entity.entity_id,
             entity._account_id,
             entity._amount,
             entity._status.value,
@@ -73,7 +70,7 @@ class PostgresInvoiceRepository(InvoiceRepository):
             """
             UPDATE btc_invoices
             SET status = $1
-            WHERE invoice_id = $2
+            WHERE payment_hash = $2
             """,
             entity._status.value,
             entity.entity_id,

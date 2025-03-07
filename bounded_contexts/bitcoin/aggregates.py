@@ -6,6 +6,7 @@ from bounded_contexts.common.aggregates import Aggregate
 class InvoiceStatus(StrEnum):
     PENDING = "PENDING"
     PAID = "PAID"
+    REJECTED = "REJECTED"
 
 
 class InvoiceType(StrEnum):
@@ -16,8 +17,6 @@ class InvoiceType(StrEnum):
 class BTCInvoice(Aggregate):
     def __init__(
         self,
-        # TODO: Use payment hash for this
-        invoice_id: str,
         account_id: str,
         amount: int,
         payment_hash: str,
@@ -25,7 +24,7 @@ class BTCInvoice(Aggregate):
         status: InvoiceStatus,
         invoice_type: InvoiceType,
     ) -> None:
-        super().__init__(invoice_id)
+        super().__init__(payment_hash)
         self._account_id = account_id
         self._amount = amount
         self._status = status
@@ -34,11 +33,12 @@ class BTCInvoice(Aggregate):
         self._invoice_type = invoice_type
 
     def mark_as_paid(self) -> None:
+        assert self._status == InvoiceStatus.PENDING
         self._status = InvoiceStatus.PAID
 
-    @property
-    def invoice_id(self) -> str:
-        return self.entity_id
+    def mark_as_rejected(self) -> None:
+        assert self._status == InvoiceStatus.PENDING
+        self._status = InvoiceStatus.REJECTED
 
     @property
     def account_id(self) -> str:

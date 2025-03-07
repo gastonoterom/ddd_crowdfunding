@@ -27,15 +27,18 @@ class AppEnvironment:
 
 load_dotenv()
 
+env_type_var: str | None = os.getenv("ENV_TYPE")
+assert env_type_var, "ENV_TYPE environment variable must be set"
+
 environment = AppEnvironment(
-    env_type=EnvType(os.getenv("ENV_TYPE")),
-    postgres_connection_url=os.getenv("POSTGRES_CONNECTION_URL"),
-    jwt_secret_key=os.getenv("JWT_SECRET_KEY"),
+    env_type=EnvType(env_type_var),
+    postgres_connection_url=os.getenv("POSTGRES_CONNECTION_URL") or "",
+    jwt_secret_key=os.getenv("JWT_SECRET_KEY") or "",
 )
 
 
 lnbits_environment = LNBitsEnvironment(
-    api_url=os.getenv("LNBITS_API_URL"),
-    admin_key=os.getenv("LNBITS_ADMIN_KEY"),
-    invoice_key=os.getenv("LNBITS_INVOICE_KEY"),
+    api_url=os.getenv("LNBITS_API_URL") or "",
+    admin_key=os.getenv("LNBITS_ADMIN_KEY") or "",
+    invoice_key=os.getenv("LNBITS_INVOICE_KEY") or "",
 )

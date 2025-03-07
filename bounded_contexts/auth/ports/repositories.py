@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import ABC
 
 from bounded_contexts.auth.aggregates import Account
 from bounded_contexts.common.ports.repositories import Repository
