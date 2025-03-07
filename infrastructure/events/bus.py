@@ -1,14 +1,15 @@
+import asyncio
+import logging
 from typing import Callable
 
 from retry import retry
 
 from infrastructure.events.messages import Command, Event, Message
-from infrastructure.events.uow_factory import make_unit_of_work
 
 
-# The event bus: handles a message, dispatches it to the right handler,
-# then collects the messages emitted by the handler
-# and dispatches them as well until the queue is empty
+logger = logging.getLogger(__name__)
+
+
 class EventBus:
     def __init__(
         self,
@@ -45,22 +46,19 @@ class EventBus:
     async def _handle_command(self, command: Command) -> None:
         handler = self._command_handlers[type(command)]
 
-        async with make_unit_of_work() as uow:
-            await handler(uow, command)
+        await handler(command)
 
     async def _handle_event(self, event: Event) -> None:
         handlers = self._event_handlers.get(type(event), [])
 
-        for handler in handlers:
-            async with make_unit_of_work() as uow:
-                await handler(uow, event)
+        result = await asyncio.gather(
+            *[handler(event) for handler in handlers], return_exceptions=True
+        )
 
-        # TODO: Asyncio gather, and create uows inside the events themselves (as not all handlers may need a uow)
-        # await asyncio.gather(
-        #     *[handler(event) for handler in handlers], return_exceptions=True
-        # )
+        exceptions = [r for r in result if isinstance(r, Exception)]
 
-        # TODO: log exceptions
+        for exc in exceptions:
+            logger.exception(f"Error handling event: {exc}")
 
 
 event_bus = EventBus()

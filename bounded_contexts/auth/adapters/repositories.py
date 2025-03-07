@@ -36,25 +36,8 @@ class PostgresAccountRepository(AccountRepository):
             entity.password,
         )
 
-    # TODO: Implement this method
     async def _update(self, entity: Account) -> None:
-        return
-
-    # TODO: This doesn't belong here
-    async def find_by_username(self, username: str) -> Account | None:
-        row = await self.uow.conn.fetchrow(
-            "SELECT account_id, username, password FROM auth_accounts WHERE username = $1",
-            username,
-        )
-
-        if row is None:
-            return None
-
-        return Account(
-            account_id=row["account_id"],
-            username=row["username"],
-            password=row["password"],
-        )
+        raise NotImplementedError()
 
 
 # Account repository factory, based on the type of UnitOfWork

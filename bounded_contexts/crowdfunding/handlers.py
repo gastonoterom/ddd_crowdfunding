@@ -12,9 +12,10 @@ from bounded_contexts.crowdfunding.messages import (
 )
 from infrastructure.events.bus import event_bus
 from infrastructure.events.unit_of_work import UnitOfWork
+from infrastructure.events.uow_factory import make_unit_of_work
 
 
-async def create_campaign_handler(uow: UnitOfWork, command: CreateCampaign) -> None:
+async def create_campaign_handler(command: CreateCampaign) -> None:
     campaign = Campaign(
         entity_id=command.entity_id,
         account_id=command.account_id,
@@ -23,47 +24,49 @@ async def create_campaign_handler(uow: UnitOfWork, command: CreateCampaign) -> N
         goal=command.goal,
     )
 
-    await campaign_repository(uow).add(campaign)
+    async with make_unit_of_work() as uow:
+        await campaign_repository(uow).add(campaign)
 
 
-async def donate_to_campaign_handler(
-    uow: UnitOfWork, command: DonateToCampaign
-) -> None:
-    campaign = await campaign_repository(uow).find_by_id(command.campaign_id)
+async def donate_to_campaign_handler(command: DonateToCampaign) -> None:
+    async with make_unit_of_work() as uow:
+        campaign = await campaign_repository(uow).find_by_id(command.campaign_id)
 
-    assert campaign
+        assert campaign
 
-    uow.emit(
-        RequestTransferCommand(
-            idempotency_key=command.idempotency_key,
-            from_account_id=command.account_id,
-            to_account_id=campaign.account_id,
-            amount=command.amount,
-            metadata={"campaign_id": campaign.entity_id},
+        uow.emit(
+            RequestTransferCommand(
+                idempotency_key=command.idempotency_key,
+                from_account_id=command.account_id,
+                to_account_id=campaign.account_id,
+                amount=command.amount,
+                metadata={"campaign_id": campaign.entity_id},
+            )
         )
-    )
 
 
 async def register_campaign_donation(
-    uow: UnitOfWork,
     command: TransferSucceededEvent,
 ) -> None:
-    campaign_id: str | None = command.metadata.get("campaign_id", None)
+    async with make_unit_of_work() as uow:
+        campaign_id: str | None = command.metadata.get("campaign_id", None)
 
-    if campaign_id is None:
-        return
+        if campaign_id is None:
+            return
 
-    campaign: Campaign | None = await campaign_repository(uow).find_by_id(campaign_id)
-
-    assert campaign
-
-    campaign.donate(
-        Donation(
-            idempotency_key=command.idempotency_key,
-            amount=command.amount,
-            account_id=command.from_account_id,
+        campaign: Campaign | None = await campaign_repository(uow).find_by_id(
+            campaign_id
         )
-    )
+
+        assert campaign
+
+        campaign.donate(
+            Donation(
+                idempotency_key=command.idempotency_key,
+                amount=command.amount,
+                account_id=command.from_account_id,
+            )
+        )
 
 
 def register_crowdfunding_handlers():

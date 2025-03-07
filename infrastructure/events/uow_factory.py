@@ -1,8 +1,7 @@
-# Unit Of Work context manager:
 import contextlib
-import sys
 from typing import AsyncGenerator, Callable
 
+from config.env import environment, EnvType
 from infrastructure.events.unit_of_work import (
     PostgresUnitOfWork,
     MockUnitOfWork,
@@ -13,11 +12,8 @@ from infrastructure.postgres import postgres_pool
 
 @contextlib.asynccontextmanager
 async def make_postgres_unit_of_work() -> AsyncGenerator[PostgresUnitOfWork, None]:
-    # TODO: Prevent transactions inside transactions
-
     async with postgres_pool.get_pool().acquire() as conn:
-        # TODO: Set isolation level to repeatable read
-        transaction = conn.transaction()
+        transaction = conn.transaction(isolation="repeatable_read")
         await transaction.start()
 
         uow = PostgresUnitOfWork(
@@ -41,11 +37,11 @@ async def make_mock_unit_of_work() -> AsyncGenerator[MockUnitOfWork, None]:
     yield uow
 
 
-# TODO: Not the most reliable way, hide behind an abstraction
 make_unit_of_work: Callable[
     [], contextlib.AbstractAsyncContextManager[UnitOfWork, None]
 ]
-if "pytest" in sys.modules:
+
+if environment.env_type == EnvType.UNIT_TEST:
     make_unit_of_work = make_mock_unit_of_work  # type: ignore
 
 else:

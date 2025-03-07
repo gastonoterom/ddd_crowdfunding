@@ -6,42 +6,41 @@ from bounded_contexts.bitcoin.messages import (
     WithdrawalCreatedEvent,
 )
 from infrastructure.events.bus import event_bus
-from infrastructure.events.unit_of_work import UnitOfWork
+from infrastructure.events.uow_factory import make_unit_of_work
 
 
-async def handle_create_invoice(uow: UnitOfWork, command: CreateInvoice) -> None:
-    invoice = BTCInvoice(
-        invoice_id=command.invoice_id,
-        account_id=command.account_id,
-        amount=command.amount,
-        status=InvoiceStatus.PENDING,
-        payment_hash=command.payment_hash,
-        payment_request=command.payment_request,
-        invoice_type=command.invoice_type,
-    )
-
-    await invoice_repository(uow).add(invoice)
-
-    if command.invoice_type == InvoiceType.WITHDRAWAL:
-        # TODO: handle consistency with a transactional outbox
-        uow.emit(
-            WithdrawalCreatedEvent(
-                invoice_id=invoice.invoice_id,
-                account_id=invoice.account_id,
-                amount=invoice.amount,
-                invoice_type=InvoiceType.WITHDRAWAL,
-            )
+async def handle_create_invoice(command: CreateInvoice) -> None:
+    async with make_unit_of_work() as uow:
+        invoice = BTCInvoice(
+            invoice_id=command.invoice_id,
+            account_id=command.account_id,
+            amount=command.amount,
+            status=InvoiceStatus.PENDING,
+            payment_hash=command.payment_hash,
+            payment_request=command.payment_request,
+            invoice_type=command.invoice_type,
         )
 
+        await invoice_repository(uow).add(invoice)
 
-async def handle_invoice_paid_event(
-    uow: UnitOfWork, event: DepositInvoicePaidEvent
-) -> None:
-    invoice = await invoice_repository(uow).find_by_id(event.invoice_id)
+        if command.invoice_type == InvoiceType.WITHDRAWAL:
+            uow.emit(
+                WithdrawalCreatedEvent(
+                    invoice_id=invoice.invoice_id,
+                    account_id=invoice.account_id,
+                    amount=invoice.amount,
+                    invoice_type=InvoiceType.WITHDRAWAL,
+                )
+            )
 
-    assert invoice
 
-    invoice.mark_as_paid()
+async def handle_invoice_paid_event(event: DepositInvoicePaidEvent) -> None:
+    async with make_unit_of_work() as uow:
+        invoice = await invoice_repository(uow).find_by_id(event.invoice_id)
+
+        assert invoice
+
+        invoice.mark_as_paid()
 
 
 def register_bitcoin_handlers() -> None:

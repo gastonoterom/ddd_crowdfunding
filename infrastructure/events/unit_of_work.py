@@ -29,11 +29,12 @@ class UnitOfWork(ABC):
 
     async def commit(self) -> None:
         # First, persist (update) tracked objects
+        # Then, save all stored messages to the outbox
+
         for obj, persistence_callback in self._tracked_objects:
             await persistence_callback()
 
-        # Then, save all stored messages to the outbox
-        # TODO: get rid of this circular import
+        # (This could be avoided with proper DI)
         from bounded_contexts.common.adapters.outbox_adapters import outbox
 
         messages = self.collect_messages()
