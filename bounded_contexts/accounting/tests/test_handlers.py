@@ -38,7 +38,7 @@ async def test_handle_account_created_event() -> None:
         assert account
 
         assert account.account_id == account_id
-        assert account.available_funds == 0
+        assert account.balance == 0
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,7 @@ async def test_handle_donation_created_event() -> None:
         assert account_1
 
         assert account_1.account_id == account_id
-        assert account_1.available_funds == 50
+        assert account_1.balance == 50
 
         account_2 = await account_repository(uow).find_by_id(
             entity_id=account_2_id,
@@ -80,7 +80,7 @@ async def test_handle_donation_created_event() -> None:
         assert account_2
 
         assert account_2.account_id == account_2_id
-        assert account_2.available_funds == 100
+        assert account_2.balance == 100
 
 
 @pytest.mark.asyncio
@@ -107,7 +107,7 @@ async def test_handle_invoice_paid_event() -> None:
         assert account_1
 
         assert account_1.account_id == account_id
-        assert account_1.available_funds == 50
+        assert account_1.balance == 50
 
 
 @pytest.mark.asyncio
@@ -136,4 +136,4 @@ async def test_handle_withdrawal_crated_event() -> None:
         assert account_1
 
         assert account_1.account_id == account_id
-        assert account_1.available_funds == 30
+        assert account_1.balance == 30

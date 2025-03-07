@@ -12,7 +12,7 @@ def test_account() -> None:
     )
 
     assert account
-    assert account.available_funds == 0
+    assert account.balance == 0
 
 
 def test_balance() -> None:
@@ -23,18 +23,18 @@ def test_balance() -> None:
     )
 
     account.deposit(Deposit(idempotency_key=idempotency_key, amount=30))
-    assert account.available_funds == 30
+    assert account.balance == 30
 
     account.deposit(Deposit(idempotency_key=idempotency_key + "_2", amount=70))
-    assert account.available_funds == 100
+    assert account.balance == 100
 
     account.withdraw(Withdrawal(idempotency_key=idempotency_key, amount=60))
 
-    assert account.available_funds == 40
+    assert account.balance == 40
 
     account.withdraw(Withdrawal(idempotency_key=idempotency_key + "_2", amount=40))
 
-    assert account.available_funds == 0
+    assert account.balance == 0
 
 
 def test_ignore_duplicate_deposits() -> None:
@@ -45,10 +45,10 @@ def test_ignore_duplicate_deposits() -> None:
     )
 
     account.deposit(Deposit(idempotency_key=idempotency_key, amount=100))
-    assert account.available_funds == 100
+    assert account.balance == 100
 
     account.deposit(Deposit(idempotency_key=idempotency_key, amount=100))
-    assert account.available_funds == 100
+    assert account.balance == 100
 
 
 def test_ignore_duplicate_withdrawals() -> None:
@@ -59,13 +59,13 @@ def test_ignore_duplicate_withdrawals() -> None:
     )
 
     account.deposit(Deposit(idempotency_key=idempotency_key, amount=100))
-    assert account.available_funds == 100
+    assert account.balance == 100
 
     account.withdraw(Withdrawal(idempotency_key=idempotency_key, amount=10))
-    assert account.available_funds == 90
+    assert account.balance == 90
 
     account.withdraw(Withdrawal(idempotency_key=idempotency_key, amount=10))
-    assert account.available_funds == 90
+    assert account.balance == 90
 
 
 def test_cant_withdraw_above_limit() -> None:
@@ -76,7 +76,7 @@ def test_cant_withdraw_above_limit() -> None:
     )
 
     account.deposit(Deposit(idempotency_key=idempotency_key, amount=10))
-    assert account.available_funds == 10
+    assert account.balance == 10
 
     try:
         account.withdraw(Withdrawal(idempotency_key=idempotency_key, amount=11))
@@ -84,4 +84,4 @@ def test_cant_withdraw_above_limit() -> None:
 
     except ValueError as e:
         assert str(e) == "Insufficient funds to withdraw '11'"
-        assert account.available_funds == 10
+        assert account.balance == 10
