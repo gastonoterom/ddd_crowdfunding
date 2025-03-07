@@ -83,5 +83,14 @@ async def handle_withdraw_rejected_event(event: WithdrawRejectedEvent) -> None:
 def register_bitcoin_handlers() -> None:
     event_bus.register_command_handler(CreateInvoice, handle_create_invoice)
     event_bus.register_event_handler(
-        DepositInvoicePaidEvent, handle_deposit_invoice_paid_event
+        DepositInvoicePaidEvent,
+        handle_deposit_invoice_paid_event,
+    )
+    event_bus.register_event_handler(
+        WithdrawSucceededEvent,
+        handle_withdraw_accepted_event,
+    )
+    event_bus.register_event_handler(
+        WithdrawRejectedEvent,
+        handle_withdraw_rejected_event,
     )
