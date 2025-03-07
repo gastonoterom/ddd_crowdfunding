@@ -24,7 +24,7 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
         if not messages:
             return
 
-        # TODO: DONT USE PICKLE!!!!!!!!!! UNSAFE!!!!!!
+        # TODO: Don't use pickle...
         records = [(message.message_id, pickle.dumps(message)) for message in messages]
 
         # This uses a prepared statement under the hood, preventing SQL injection
