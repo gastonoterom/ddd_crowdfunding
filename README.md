@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 # Satoshi Spark 🚀 🔥
 
 ## Crowdfunding via bitcoin lightning. 
@@ -74,7 +76,7 @@ import orm_library
 
 class CampaignAggregate(orm_library.ORMClass):
     entity_id = orm_library.ORMColumn(type=orm_library.types.String)
-    is_active = orm_library.ORMColumn(type=orm_library.types.postgres.SmallInt)
+    goal = orm_library.ORMColumn(type=orm_library.types.Integer)
     ... 
 ```
 
@@ -87,11 +89,68 @@ The solution? Reverse the dependencies.
 
 The domain will define repository interfaces (ports), and later we can define specific implementations (adapters) for the ORM library or database we choose.
 
-But... How can we model the concept of an ACID database transaction using DDD? This seems impossible!
+#### Example: Abstract Repository
+```python
+# See how our new aggregate is not coupled with any specific ORM or DB implementation
+class Campaign(Aggregate):
+    def __init__(self, entity_id: str, goal: int, ...) -> None:
+        super().__init__(entity_id)
+        self.goal = goal
+        ...
 
-The answer is... Units of Work! 😉
+# Generic abstract repository class
+class Repository[T: Aggregate](ABC):
+    @abstractmethod
+    async def _find_by_id(self, entity_id: str) -> T | None:
+        pass
 
-### Unit of Work
+    @abstractmethod
+    async def _add(self, entity: T) -> None:
+        pass
+
+    @abstractmethod
+    async def _update(self, entity: T) -> None:
+        pass
+    
+    ###################################
+    # This part will be explained later:
+    def __init__(self, uow: UnitOfWork) -> None:
+        self.__uow = uow
+
+    def __track_object(self, obj: T) -> None:
+        self.__uow.track_object(obj, lambda: self._update(obj))
+
+    async def add(self, entity: T) -> None:
+        await self._add(entity)
+        self.__track_object(entity)
+
+    async def find_by_id(self, entity_id: str) -> T | None:
+        obj = await self._find_by_id(entity_id)
+
+        if obj is not None:
+            self.__track_object(obj)
+
+        return obj
+    ###################################
+
+class CampaignRepository(Repository[Campaign], ABC):
+    pass
+```
+
+I suspect you can already guess the overall idea on how to implement a specific repository for a Postgres database, right? 😉
+
+If not, don't worry! There are plenty of examples in the codebase. 
+
+You can also submit a PR to add more examples for different libraries or engines!
+
+### Unit of Work: How to handle database transactions in the domain model
+
+If you've been paying closed attention, you'll notice that we haven't talked about transactions at all.
+
+Creating database transactions is trivial, 
+but how can we ensure the domain does not become polluted with database-specific code?
+
+The answer is... Units of Work!
 
 The Unit of Work pattern is used to manage transactions and ensure data consistency. 
 It tracks changes to aggregates and commits them as a single transaction.
@@ -152,6 +211,26 @@ class PostgresUnitOfWork(UnitOfWork):
 
     async def _rollback(self) -> None:
         await self.__transaction.rollback()
+
+# Postgres UOW context manager factory
+@contextlib.asynccontextmanager
+async def make_postgres_unit_of_work() -> AsyncGenerator[PostgresUnitOfWork, None]:
+    async with postgres_pool.get_pool().acquire() as conn:
+        transaction = conn.transaction(isolation="repeatable_read")
+        await transaction.start()
+
+        uow = PostgresUnitOfWork(
+            conn,
+            transaction,
+        )
+
+        try:
+            yield uow
+
+            await uow.commit()
+        except BaseException:
+            await uow.rollback()
+            raise
 ```
 
 #### Example: UOW in action
@@ -184,6 +263,8 @@ async def register_campaign_donation(
     # * commit the transaction
 ```
 
+I hope this covers the previous commented part of the repository implementation 😅.
+ 
 ## Command Query Responsibility Segregation (CQRS)
 
 CQRS is used to separate the read and write operations of the application. 
@@ -223,14 +304,17 @@ class TransferSucceededEvent(Event):
 ## Distributed Systems
 
 Even though this application is a monolith, we don't do direct communication between contexts. 
-Instead, we use messages to communicate between contexts.
+Instead, we use messages to communicate between them.
 
-How can we ensure that messages are delivered reliably? How can we reliable send messages related to a transaction?
-How can we handle distributed transactions then? We can't use a traditional ACID transaction across multiple contexts.
+This comes with some considerations:
 
-If only someone could come up with a solution for this... 🤔
+* How can we ensure that messages are delivered reliably? 💀
+* How can we ensure that messages are not lost? 💀
+* How can we handle inter-context database transactions? 💀
 
-## Transactional Outboxes: How to ensure messages are reliably sent
+If only someone could come up with a solution for these problems... 🤔
+
+## Transactional Outboxes: message reliability
 
 Transactional Outboxes ensure that messages are reliably sent even if the system crashes. They store messages in a database table and process them asynchronously.
 
@@ -246,8 +330,9 @@ class TransactionalOutbox(ABC):
         pass
 ```
 
-### Choreography Based Sagas: How to distribute transactions across multiple contexts
+### Choreography Based Sagas: distributed transactions across contexts
 
+Exercise for the reader: Implement this application as a distributed system instead of a monolith 😳.
 
 ## Contributing
 
