@@ -363,7 +363,7 @@ This comes with some considerations:
 
 If only someone could come up with a solution for these problems... 🤔
 
-### Transactional Outboxes: handle message reliability
+### Transactional Outboxes: reliability send messages
 
 Transactional Outboxes ensure that messages are reliably sent even if the system crashes.
 They store messages in a database table and process them asynchronously.
