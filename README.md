@@ -1,25 +1,10 @@
-from abc import abstractmethod
-
 # Satoshi Spark 🚀 🔥
 
-## Crowdfunding via bitcoin lightning. 
-
-The project implements Domain-Driven Design (DDD) and the Command Query Responsibility Segregation (CQRS) pattern.
-
-Intended for educational purposes only.
+_Crowdfunding via bitcoin lightning_
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Project Structure](#project-structure)
-- [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
-- [Command Query Responsibility Segregation (CQRS)](#command-query-responsibility-segregation-cqrs)
-- [Units of Work](#units-of-work)
-- [Transactional Outboxes](#transactional-outboxes)
-- [Distributed Systems](#distributed-systems)
-- [Getting Started](#getting-started)
-- [Contributing](#contributing)
-- [License](#license)
+TODO: table of contents
 
 ## Introduction
 
@@ -65,7 +50,7 @@ class Aggregate(ABC):
 ```
 
 
-### Abstract Repositories
+### Abstract Repositories, avoid the ORM jail
 
 Repositories are used to abstract the persistence layer from the domain.
 Here (in DDD-land), we don't want to couple the domain with a specific database or ORM implementation.
@@ -239,7 +224,8 @@ async def make_postgres_unit_of_work() -> AsyncGenerator[PostgresUnitOfWork, Non
 async def register_campaign_donation(
     command: TransferSucceededEvent,
 ) -> None:
-    # This context manager creates a uow and starts a transaction
+    # Entering this context manager creates a uow and starts a transaction
+
     async with make_unit_of_work() as uow:
         campaign_id: str = command.metadata["campaign_id"]
 
@@ -297,9 +283,60 @@ class TransferSucceededEvent(Event):
 
 ### Write model
 
+The write model consists of the aggregates, repositories, units of work, and messages used to change the state of the system.
+Here, consistency and integrity are the main concerns. Performance, although always relevant, is not the primary focus.
+
+#### Example: Write model command handler
+```python
+async def handle_register(
+    command: RegisterAccount,
+) -> None:
+    async with make_unit_of_work() as uow:
+        account = Account(
+            account_id=command.account_id,
+            username=command.username.lower(),
+            password=command.hashed_password,
+        )
+
+        await account_repository(uow).add(account)
+
+        uow.emit(SignupEvent(account_id=account.account_id))
+```
+
 ### Read model
 
+The read model consists of the queries and views used to retrieve data from the system.
+These operations do not affect the state of the system, and should be optimized for speed. 
 
+This model can implement caches, projections, and other tricks to improve performance.
+It might not always be 1 on 1 with the write model, but it should not matter.
+
+#### Example: Read model query handler
+```python
+@dataclass(frozen=True)
+class DashboardView:
+    account_id: str
+    balance: int
+    campaigns: list[CampaignView]
+    ...
+
+
+async def view_dashboard_query(account_id: str) -> DashboardView:
+    return await dashboard_view_factory().create_dashboard_view(account_id=account_id)
+
+class DashboardViewFactory(ABC):
+    @abstractmethod
+    async def create_dashboard_view(self, account_id: str) -> DashboardView:
+        pass
+
+class PostgresDashboardViewFactory(DashboardViewFactory):
+    async def create_dashboard_view(self, account_id: str) -> DashboardView :
+        async with postgres_pool.get_pool().acquire() as conn:
+            row = await conn.fetchrow("SQL Query...")
+
+        assert row
+        return DashboardView(**row)
+```
 
 ## Distributed Systems
 
