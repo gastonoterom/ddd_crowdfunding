@@ -23,13 +23,14 @@ Intended for educational purposes only.
 
 Satoshi Spark is designed to facilitate crowdfunding campaigns via the Bitcoin Lightning Network. 
 
-The project is built with a focus on scalability, maintainability, and clear separation of concerns.
+This little project is a playground for exploring Domain-Driven Design (DDD), 
+Command Query Responsibility Segregation (CQRS), and distributed systems concepts.
 
 ## Domain-Driven Design (DDD)
 
 The project follows DDD principles to ensure a clear and maintainable codebase. 
 
-The project is organized into several bounded contexts, each representing a distinct part of the domain:
+Satoshi Spark is organized into several bounded contexts, each representing a distinct part of the domain:
 
 - **Common**: Contains abstract and basic aggregate/ports/adapter definitions.
 - **Auth**: Handles authentication and user management.
@@ -62,14 +63,42 @@ class Aggregate(ABC):
 ```
 
 
-## Unit of Work
+### Abstract Repositories
+
+Repositories are used to abstract the persistence layer from the domain.
+Here (in DDD-land), we don't want to couple the domain with a specific database or ORM implementation.
+
+#### Example: Coupling our domain with some specific ORM or DB implementation
+```python
+import orm_library
+
+class CampaignAggregate(orm_library.ORMClass):
+    entity_id = orm_library.ORMColumn(type=orm_library.types.String)
+    is_active = orm_library.ORMColumn(type=orm_library.types.postgres.SmallInt)
+    ... 
+```
+
+Can you see the 'problem' with this code? 
+
+What if we want to change the ORM library? 
+How can we write unit tests without being at the mercy of the ORM library?
+
+The solution? Reverse the dependencies.
+
+The domain will define repository interfaces (ports), and later we can define specific implementations (adapters) for the ORM library or database we choose.
+
+But... How can we model the concept of an ACID database transaction using DDD? This seems impossible!
+
+The answer is... Units of Work! 😉
+
+### Unit of Work
 
 The Unit of Work pattern is used to manage transactions and ensure data consistency. 
 It tracks changes to aggregates and commits them as a single transaction.
 This pattern represents an abstraction for any database (SQL or not) transaction, 
 de-coupling the domain from particular database implementations.
 
-### Example: Abstract Unit of Work
+#### Example: Abstract Unit of Work
 
 ```python
 # Abstract unit of work (UOW)
@@ -104,7 +133,7 @@ class UnitOfWork(ABC):
         pass
 ```
 
-### Example: Postgres Unit Of Work implementation
+#### Example: Postgres Unit Of Work implementation
 
 ```python
 # Postgres specific implementation
@@ -125,7 +154,7 @@ class PostgresUnitOfWork(UnitOfWork):
         await self.__transaction.rollback()
 ```
 
-### Example: UOW in action
+#### Example: UOW in action
 
 ```python
 async def register_campaign_donation(
@@ -154,9 +183,6 @@ async def register_campaign_donation(
     # * store the messages in the transactional outbox
     # * commit the transaction
 ```
-## Repositories, the persistance layer
-
-```python```
 
 ## Command Query Responsibility Segregation (CQRS)
 
@@ -165,7 +191,7 @@ Commands are used to change the state of the system, while queries are used to r
 
 Commands are written as imperative verbs (do something...), while events are written as past verbs (something happened...).
 
-### Example: Command and Event
+#### Example: Command and Event
 
 ```python
 # Crowdfunding context example command:
@@ -193,11 +219,22 @@ class TransferSucceededEvent(Event):
 ### Read model
 
 
-## Transactional Outboxes
+
+## Distributed Systems
+
+Even though this application is a monolith, we don't do direct communication between contexts. 
+Instead, we use messages to communicate between contexts.
+
+How can we ensure that messages are delivered reliably? How can we reliable send messages related to a transaction?
+How can we handle distributed transactions then? We can't use a traditional ACID transaction across multiple contexts.
+
+If only someone could come up with a solution for this... 🤔
+
+## Transactional Outboxes: How to ensure messages are reliably sent
 
 Transactional Outboxes ensure that messages are reliably sent even if the system crashes. They store messages in a database table and process them asynchronously.
 
-### Example: Transactional Outbox
+#### Example: Transactional Outbox
 
 ```python
 class TransactionalOutbox(ABC):
@@ -209,33 +246,8 @@ class TransactionalOutbox(ABC):
         pass
 ```
 
-## Distributed Systems
+### Choreography Based Sagas: How to distribute transactions across multiple contexts
 
-Satoshi Spark is designed to be a distributed system, with components that can be scaled independently. The use of DDD, CQRS, Units of Work, and Transactional Outboxes helps to manage the complexity of distributed systems.
-
-## Getting Started
-
-To get started with Satoshi Spark, follow these steps:
-
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/satoshi-spark.git
-    ```
-
-2. Install the dependencies:
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-3. Set up the database and run the migrations:
-    ```sh
-    # Add your database setup and migration commands here
-    ```
-
-4. Start the application:
-    ```sh
-    # Add your application start command here
-    ```
 
 ## Contributing
 
