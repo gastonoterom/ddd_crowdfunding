@@ -34,6 +34,7 @@ Satoshi Spark is organized into several bounded contexts, each representing a di
 - **Common**: Contains abstract and basic aggregate/ports/adapter definitions.
 - **Auth**: Handles authentication and user management.
 - **Accounting**: Manages account balances and transactions.
+- **Crowdfunding**: Manages crowdfunding campaigns and donations.
 - **Bitcoin**: Manages Bitcoin Lightning Network-related operations, such as invoices.
 - **Dashboard**: Provides a read-only context where users can view their activities.
 
