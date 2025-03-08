@@ -128,8 +128,35 @@ class PostgresUnitOfWork(UnitOfWork):
 ### Example: UOW in action
 
 ```python
+async def register_campaign_donation(
+    command: TransferSucceededEvent,
+) -> None:
+    # This context manager creates a uow and starts a transaction
+    async with make_unit_of_work() as uow:
+        campaign_id: str = command.metadata["campaign_id"]
 
+        campaign: Campaign = await campaign_repository(uow).find_by_id(
+            campaign_id
+        )
+
+        # Notice how we don't have to explicitly call any persistence method on the aggregate,
+        # as the UOW will take care of that for us
+        campaign.donate(
+            Donation(
+                idempotency_key=command.idempotency_key,
+                amount=command.amount,
+                account_id=command.from_account_id,
+            )
+        )
+
+    # Leaving the context manager will: 
+    # * persist the aggregate changes
+    # * store the messages in the transactional outbox
+    # * commit the transaction
 ```
+## Repositories, the persistance layer
+
+```python```
 
 ## Command Query Responsibility Segregation (CQRS)
 
