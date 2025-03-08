@@ -503,8 +503,6 @@ We'll use this example: __A user requests a withdraw to a bitcoin wallet.__
 
 #### Example: Bitcoin withdraw saga, insufficient balance
 
-Example: __A user requests a withdraw to a bitcoin wallet, but their balance is insufficient.__
-
 * First transaction, bitcoin context (saga starting point):
   * User requests a withdrawal for X amount above their limit (this can happen if the view model is outdated)
   * Bitcoin context creates an invoice with a pending status
