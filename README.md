@@ -6,8 +6,8 @@ _Crowdfunding via bitcoin lightning_
 
 - [Introduction](#introduction)
 - [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
-  - [Aggregates, the building block of our domain](#aggregates-the-building-block-of-our-domain)
-  - [Abstract Repositories, avoid the ORM jail](#abstract-repositories-avoid-the-orm-jail)
+  - [Aggregates: the building block of our domain](#aggregates-the-building-block-of-our-domain)
+  - [Abstract Repositories: avoid the ORM jail](#abstract-repositories-avoid-the-orm-jail)
   - [Unit of Work: How to handle database transactions in the domain model](#unit-of-work-how-to-handle-database-transactions-in-the-domain-model)
 - [Command Query Responsibility Segregation (CQRS)](#command-query-responsibility-segregation-cqrs)
   - [Write model](#write-model)
@@ -40,7 +40,7 @@ Satoshi Spark is organized into several bounded contexts, each representing a di
 
 Each bounded context encapsulates its own domain logic and interacts with other contexts only through messages.
 
-### Aggregates, the building block of our domain
+### Aggregates: the building block of our domain
 
 In Domain-Driven Design (DDD), aggregates define consistency boundaries in the write domain, ensuring that all changes within them maintain business rules and integrity. 
 Each aggregate consists of closely related entities and has a root entity that controls modifications.
@@ -63,7 +63,7 @@ class Aggregate(ABC):
 ```
 
 
-### Abstract Repositories, avoid the ORM jail
+### Abstract Repositories: avoid the ORM jail
 
 Repositories are used to abstract the persistence layer from the domain.
 Here (in DDD-land), we don't want to couple the domain with a specific database or ORM implementation.
@@ -528,13 +528,18 @@ This concept is called __Eventual Consistency__
 
 ### From monolith to microservices
 
-The nice thing about this architecture, and DDD in general, is that it is very easy to split into microservices.
+The nice thing about this architecture is that it is very easy to split into microservices, as the bounded contexts are independent.
 
-1. We can create one service per bounded contexts, as they are independent.
-2. Replace the in-process message bus with a real message broker (like Kafka or RabbitMQ)
-3. Finally, deploy the applications separately.
+We can:
 
-I'll leave this as an exercise to the reader 😳.
+1. Create one service, repository, ci/cd flow, etc... per bounded context.
+2. Move from a single database per project to a multiple database/schema per service pattern.
+3. Replace the in-process message bus with a real message broker (like Kafka or RabbitMQ)
+4. Deploy the applications separately.
+
+But of course, there are many more considerations when moving to a microservice architecture.  
+
+I'll leave this migration as an exercise to the reader 😳.
 
 ## Contributing
 
