@@ -4,8 +4,20 @@ _Crowdfunding via bitcoin lightning_
 
 ## Table of Contents
 
-TODO: table of contents
-
+- [Introduction](#introduction)
+- [Domain-Driven Design (DDD)](#domain-driven-design-ddd)
+  - [Aggregates, the building block of our domain](#aggregates-the-building-block-of-our-domain)
+  - [Abstract Repositories, avoid the ORM jail](#abstract-repositories-avoid-the-orm-jail)
+  - [Unit of Work: How to handle database transactions in the domain model](#unit-of-work-how-to-handle-database-transactions-in-the-domain-model)
+- [Command Query Responsibility Segregation (CQRS)](#command-query-responsibility-segregation-cqrs)
+  - [Write model](#write-model)
+  - [Read model](#read-model)
+- [Distributed Systems](#distributed-systems)
+  - [Transactional Outboxes: handle message reliability](#transactional-outboxes-handle-message-reliability)
+  - [Choreography Based Sagas: distributed transactions across contexts](#choreography-based-sagas-distributed-transactions-across-contexts)
+  - [From monolith to microservices](#from-monolith-to-microservices)
+- [Contributing](#contributing)
+- [License](#license)
 ## Introduction
 
 Satoshi Spark is designed to facilitate crowdfunding campaigns via the Bitcoin Lightning Network. 
@@ -27,7 +39,7 @@ Satoshi Spark is organized into several bounded contexts, each representing a di
 
 Each bounded context encapsulates its own domain logic and interacts with other contexts only through messages.
 
-### Aggregates, the building block of our write domain
+### Aggregates, the building block of our domain
 
 In Domain-Driven Design (DDD), aggregates define consistency boundaries in the write domain, ensuring that all changes within them maintain business rules and integrity. 
 Each aggregate consists of closely related entities and has a root entity that controls modifications.
@@ -351,7 +363,7 @@ This comes with some considerations:
 
 If only someone could come up with a solution for these problems... 🤔
 
-## Transactional Outboxes: handle message reliability
+### Transactional Outboxes: handle message reliability
 
 Transactional Outboxes ensure that messages are reliably sent even if the system crashes.
 They store messages in a database table and process them asynchronously.
@@ -466,7 +478,64 @@ class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
 
 ### Choreography Based Sagas: distributed transactions across contexts
 
-Exercise for the reader: Implement this application as a distributed system instead of a monolith 😳.
+Here, we'll see how to handle distributed transactions across contexts using a choreography-based saga.
+
+Basically, instead of having one ACID transaction, we have multiple smaller transactions that are coordinated by messages.
+
+We'll use this example: __A user requests a withdraw to a bitcoin wallet.__
+
+#### Example: Bitcoin withdraw saga, happy path
+
+* First transaction, bitcoin context (saga starting point):
+  * User requests a withdrawal
+  * Bitcoin context creates an invoice with a pending status
+  * Bitcoin context emits a WithdrawRequestedEvent (The transactional outbox ensures this event is sent)
+
+* Second transaction, accounting context:
+  * The system verifies the user's balance
+  * The system accepts the withdrawal
+  * The system updates the account's balance and stores the transaction
+  * The system emits a WithdrawalAcceptedEvent (The transactional outbox ensures this event is sent)
+
+* Third transaction, bitcoin context:
+  * The bitcoin processor pays for the invoice
+  * The bitcoin context updates the invoice status to paid
+
+#### Example: Bitcoin withdraw saga, insufficient balance
+
+Example: __A user requests a withdraw to a bitcoin wallet, but their balance is insufficient.__
+
+* First transaction, bitcoin context (saga starting point):
+  * User requests a withdrawal for X amount above their limit (this can happen if the view model is outdated)
+  * Bitcoin context creates an invoice with a pending status
+  * Bitcoin context emits a WithdrawRequestedEvent (The transactional outbox ensures this event is sent)
+
+* Second transaction, accounting context:
+  * The system verifies the user's balance
+  * The system rejects the withdrawal
+  * The system emits a WithdrawalRejectedEvent (The transactional outbox ensures this event is sent)
+
+* Third transaction, bitcoin context:
+  * The bitcoin invoice is rejected, or deleted
+
+Idempotency is crucial in all steps, as the system might crash at any point and messages should be able to be
+processed multiple times.
+
+If the system crashes in any step, the saga should be retried until it completes successfully.
+
+You can see how, even thought there is not one big transaction, the system is still consistent.
+
+This concept is called __Eventual Consistency__
+
+### From monolith to microservices
+
+The nice thing about this architecture, and DDD in general, is that it is very easy to split into microservices.
+
+1. We can create one service per bounded contexts, as they are independent.
+2. Replace the in-process message bus with a real message broker (like Kafka or RabbitMQ)
+3. Finally, deploy the applications separately.
+
+I'll leave this as an exercise to the reader 😳.
 
 ## Contributing
 
@@ -475,12 +544,3 @@ Contributions are welcome! Please open an issue or submit a pull request.
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Blog Articles
-
-For more information, check out the following blog articles:
-
-- [Domain-Driven Design (DDD)](link-to-your-article)
-- [Units of Work](link-to-your-article)
-- [Transactional Outboxes](link-to-your-article)
-- [Distributed Systems](link-to-your-article)
