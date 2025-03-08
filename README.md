@@ -494,7 +494,7 @@ We'll use this example: __A user requests a withdraw to a bitcoin wallet.__
 * Second transaction, accounting context:
   * The system verifies the user's balance
   * The system accepts the withdrawal
-  * The system updates the account's balance and stores the transaction
+  * The system updates the account's balance and stores the financial operation
   * The system emits a WithdrawalAcceptedEvent (The transactional outbox ensures this event is sent)
 
 * Third transaction, bitcoin context:
