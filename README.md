@@ -445,6 +445,7 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
     def __init__(self, uow: PostgresUnitOfWork) -> None:
         super().__init__(uow)
         self.uow = uow
+
     async def store(self, messages: list[Message]) -> None:
         if not messages:
             return
@@ -452,7 +453,6 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
         await self.uow.conn.executemany("sql query...")
 
 class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
-
     async def _fetch_messages(self) -> list[Message]:
         async with postgres_pool.get_pool().acquire() as conn:
             rows = await conn.fetch("sql query...")
