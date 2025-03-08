@@ -11,7 +11,6 @@ from bounded_contexts.crowdfunding.messages import (
     DonateToCampaign,
 )
 from infrastructure.events.bus import event_bus
-from infrastructure.events.unit_of_work import UnitOfWork
 from infrastructure.events.uow_factory import make_unit_of_work
 
 

@@ -14,5 +14,5 @@ class CreateInvoice(Command):
 
 
 @dataclass(frozen=True)
-class DepositInvoicePaidEvent(Event):
+class VerifyInvoice(Command):
     payment_hash: str

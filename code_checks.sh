@@ -1,3 +1,3 @@
 pycln .
-black . --check
-mypy . --check
+black .
+mypy .

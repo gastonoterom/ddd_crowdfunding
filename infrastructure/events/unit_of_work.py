@@ -19,11 +19,6 @@ class UnitOfWork(ABC):
     def emit(self, message: Message) -> None:
         self._messages.append(message)
 
-    def collect_messages(self) -> list[Message]:
-        messages = self._messages
-        self._messages = []
-        return messages
-
     def track_object(self, obj: object, callback: Callable) -> None:
         self._tracked_objects.append((obj, callback))
 
@@ -37,13 +32,14 @@ class UnitOfWork(ABC):
         # (This could be avoided with proper DI)
         from bounded_contexts.common.adapters.outbox_adapters import outbox
 
-        messages = self.collect_messages()
+        messages = self._messages
         await outbox(self).store(messages)
 
         await self._commit()
 
     async def rollback(self) -> None:
         self._messages.clear()
+        self._tracked_objects.clear()
         await self._rollback()
 
     @abstractmethod

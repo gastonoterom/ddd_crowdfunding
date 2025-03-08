@@ -27,7 +27,6 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
         # TODO: Don't use pickle...
         records = [(message.message_id, pickle.dumps(message)) for message in messages]
 
-        # This uses a prepared statement under the hood, preventing SQL injection
         await self.uow.conn.executemany(
             """
             INSERT INTO outbox_messages (message_id, message_data) 

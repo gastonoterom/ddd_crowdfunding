@@ -10,6 +10,7 @@ from bounded_contexts.common.adapters.outbox_adapters import process_outbox
 from bounded_contexts.crowdfunding.adapters.rest import crowdfunding_router
 from bounded_contexts.crowdfunding.handlers import register_crowdfunding_handlers
 from bounded_contexts.bitcoin.handlers import register_bitcoin_handlers
+from bounded_contexts.dashboard.adapters.rest import dashboard_router
 from infrastructure.postgres import postgres_pool, execute_ddl
 from infrastructure.tools.background_utils import background_service
 
@@ -47,3 +48,4 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(crowdfunding_router)
 app.include_router(bitcoin_router)
+app.include_router(dashboard_router)

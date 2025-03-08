@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16
-    container_name: postgres_db
+    container_name: satoshi_spark_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from bounded_contexts.bitcoin.adapters.btc_processor import btc_processor
 from bounded_contexts.bitcoin.messages import (
     CreateInvoice,
-    DepositInvoicePaidEvent,
+    VerifyInvoice,
     InvoiceType,
 )
 from bounded_contexts.bitcoin.queries import get_invoice_view
@@ -53,15 +53,8 @@ class VerifyInvoiceRequest(BaseModel):
 async def put_verify_deposit(
     body: VerifyInvoiceRequest,
 ) -> None:
-    is_paid = await btc_processor().is_invoice_paid(
-        payment_hash=body.payment_hash,
-    )
-
-    if not is_paid:
-        raise Exception("Invoice not paid")
-
     await event_bus.handle(
-        DepositInvoicePaidEvent(
+        VerifyInvoice(
             payment_hash=body.payment_hash,
         )
     )

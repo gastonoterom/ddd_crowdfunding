@@ -27,7 +27,7 @@ class LNBitsProcessor(BitcoinLightningProcessor):
 
             return InvoiceData(
                 payment_hash=invoice_data["payment_hash"],
-                payment_request=invoice_data["payment_request"],
+                payment_request=invoice_data["bolt11"],
             )
         else:
             raise Exception(f"Error creating invoice: {response}")

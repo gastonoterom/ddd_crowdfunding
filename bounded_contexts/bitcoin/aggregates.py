@@ -33,10 +33,16 @@ class BTCInvoice(Aggregate):
         self._invoice_type = invoice_type
 
     def mark_as_paid(self) -> None:
+        if self._status == InvoiceStatus.PAID:
+            return
+
         assert self._status == InvoiceStatus.PENDING
         self._status = InvoiceStatus.PAID
 
     def mark_as_rejected(self) -> None:
+        if self._status == InvoiceStatus.REJECTED:
+            return
+
         assert self._status == InvoiceStatus.PENDING
         self._status = InvoiceStatus.REJECTED
 

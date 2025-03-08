@@ -54,7 +54,7 @@ class PostgresInvoiceRepository(InvoiceRepository):
             """
             INSERT INTO btc_invoices (
                 account_id, amount, status, payment_hash, payment_request, invoice_type
-            ) VALUES ($1, $2, $3, $4, $5, $6, )
+            ) VALUES ($1, $2, $3, $4, $5, $6)
 
             """,
             entity._account_id,

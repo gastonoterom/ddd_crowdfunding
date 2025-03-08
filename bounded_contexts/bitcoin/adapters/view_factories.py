@@ -1,4 +1,4 @@
-from bounded_contexts.bitcoin.aggregates import InvoiceStatus
+from bounded_contexts.bitcoin.aggregates import InvoiceStatus, InvoiceType
 from bounded_contexts.bitcoin.ports.view_factories import InvoiceViewFactory
 from bounded_contexts.bitcoin.views import InvoiceView
 from infrastructure.postgres import postgres_pool
@@ -20,10 +20,14 @@ class PostgresInvoiceViewFactory(InvoiceViewFactory):
         assert row
 
         return InvoiceView(
-            payment_hash=row.payment_hash,
-            account_id=row.account_id,
-            amount=int(row.amount),
-            status=InvoiceStatus(row.status),
-            payment_request=row.payment_request,
-            invoice_type=row.invoice_type,
+            payment_hash=row["payment_hash"],
+            account_id=row["account_id"],
+            amount=int(row["amount"]),
+            status=InvoiceStatus(row["status"]),
+            payment_request=row["payment_request"],
+            invoice_type=InvoiceType(row["invoice_type"]),
         )
+
+
+def invoice_view_factory() -> InvoiceViewFactory:
+    return PostgresInvoiceViewFactory()

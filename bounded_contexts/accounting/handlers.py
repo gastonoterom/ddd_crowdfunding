@@ -62,7 +62,7 @@ async def handle_deposit(
         account.deposit(
             idempotency_key=command.idempotency_key,
             amount=command.amount,
-            metadata={},
+            metadata=command.metadata,
         )
 
 
