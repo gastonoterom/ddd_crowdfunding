@@ -38,13 +38,6 @@ class PostgresTransactionalOutbox(TransactionalOutbox):
 
 
 class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
-    async def process_messages(self) -> None:
-        messages = await self._fetch_messages()
-
-        await self._dispatch_messages(messages)
-
-        await self._destroy_messages(messages)
-
     async def _fetch_messages(self) -> list[Message]:
         async with postgres_pool.get_pool().acquire() as conn:
             rows = await conn.fetch(

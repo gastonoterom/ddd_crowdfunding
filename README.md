@@ -351,11 +351,50 @@ This comes with some considerations:
 
 If only someone could come up with a solution for these problems... 🤔
 
-## Transactional Outboxes: message reliability
+## Transactional Outboxes: handle message reliability
 
-Transactional Outboxes ensure that messages are reliably sent even if the system crashes. They store messages in a database table and process them asynchronously.
+Transactional Outboxes ensure that messages are reliably sent even if the system crashes.
+They store messages in a database table and process them asynchronously.
 
-#### Example: Transactional Outbox
+Consider this scenario:
+1. We start a database transaction
+2. We do changes to the domain write model
+3. We commit the database transaction
+4. We emit messages to a messaging engine (think of kafka or whatever)
+
+What happens if our application crashes after step 3?
+The transaction is saved, but the messages are lost.
+Important business processes might not be triggered, and the system might end up in an inconsistent state.
+
+Now the following:
+1. We start a database transaction
+2. We do changes to the domain write model
+3. We emit messages to a different messaging engine (think of kafka or whatever)
+4. We commit the database transaction
+
+What happens if our application crashes after step 3?
+The messages are sent, but the transaction was rolled back.
+This is also very bad, imagine that we send a 'payment processed event', but the db never saved it.
+
+A solution for this is to store the messages in a database table, in the same transaction as the domain changes.
+Then, after commit, a processor periodically polls this table and sends the messages to the messaging engine.
+After sending the messages, they can be deleted. 
+
+1. We start a database transaction (i.e. postgres)
+2. We do changes to the domain write model
+3. We store the events in a postgres database table
+4. We commit the database transaction
+5. After transaction, we periodically poll the table and send the messages to the messaging engine
+6. After dispatch, we delete the messages
+
+Now, if our application crashes after step 3, there should be no issues!
+Either the transaction commits and the messages are sent, or the transaction rolls back and the messages are never sent.
+
+What happens if the processor crashes after step 5? Between sending the message and deleting it.
+As you can imagine, the messages will be sent twice. This is called 'at least once' delivery and is what most messaging engines implement.
+This is why it is important to make sure that the message handlers are idempotent.
+
+#### Example: Transactional Outbox and Outbox processor
 
 ```python
 class TransactionalOutbox(ABC):
@@ -365,6 +404,64 @@ class TransactionalOutbox(ABC):
     @abstractmethod
     async def store(self, messages: list[Message]) -> None:
         pass
+
+class TransactionalOutboxProcessor(ABC):
+    async def process_messages(self) -> None:
+        messages = await self._fetch_messages()
+
+        await self._dispatch_messages(messages)
+
+        await self._destroy_messages(messages)
+
+    @abstractmethod
+    async def _fetch_messages(self) -> list[Message]:
+        pass
+
+    @abstractmethod
+    async def _dispatch_messages(self, messages: list[Message]) -> None:
+        pass
+
+    @abstractmethod
+    async def _destroy_messages(self, messages: list[Message]) -> None:
+        pass
+```
+
+#### Example: Postgres implementation of a transactional outbox
+```python
+
+class PostgresTransactionalOutbox(TransactionalOutbox):
+    def __init__(self, uow: PostgresUnitOfWork) -> None:
+        super().__init__(uow)
+        self.uow = uow
+    async def store(self, messages: list[Message]) -> None:
+        if not messages:
+            return
+
+        await self.uow.conn.executemany("sql query...")
+
+class PostgresTransactionalOutboxProcessor(TransactionalOutboxProcessor):
+
+    async def _fetch_messages(self) -> list[Message]:
+        async with postgres_pool.get_pool().acquire() as conn:
+            rows = await conn.fetch("sql query...")
+        return [self.__row_to_message(row) for row in rows]
+
+    async def _dispatch_messages(self, messages: list[Message]) -> None:
+        results = await asyncio.gather(
+            *[event_bus.handle(message) for message in messages],
+            return_exceptions=True,
+        )
+        exceptions = [result for result in results if isinstance(result, Exception)]
+        if exceptions:
+            for exc in exceptions:
+                logger.error(f"Error processing message: {exc}")
+
+    async def _destroy_messages(self, messages: list[Message]) -> None:
+        async with postgres_pool.get_pool().acquire() as conn:
+            await conn.execute("sql query...")
+        
+    def __row_to_message(self, row: dict) -> Message:
+        ...
 ```
 
 ### Choreography Based Sagas: distributed transactions across contexts
