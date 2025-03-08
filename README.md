@@ -268,6 +268,8 @@ I hope this covers the previous commented part of the repository implementation 
 CQRS is used to separate the read and write operations of the application. 
 Commands are used to change the state of the system, while queries are used to retrieve data.
 
+### Write model
+
 Commands are written as imperative verbs (do something...), while events are written as past verbs (something happened...).
 
 #### Example: Command and Event
@@ -292,8 +294,6 @@ class TransferSucceededEvent(Event):
     amount: int
     metadata: dict
 ```
-
-### Write model
 
 The write model consists of the aggregates, repositories, units of work, and messages used to change the state of the system.
 Here, consistency and integrity are the main concerns. Performance, although always relevant, is not the primary focus.
