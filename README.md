@@ -18,6 +18,7 @@ _Crowdfunding via bitcoin lightning_
   - [From monolith to microservices](#from-monolith-to-microservices)
 - [Contributing](#contributing)
 - [License](#license)
+
 ## Introduction
 
 Satoshi Spark is designed to facilitate crowdfunding campaigns via the Bitcoin Lightning Network. 
@@ -96,40 +97,19 @@ class Campaign(Aggregate):
         self.goal = goal
         ...
 
-# Generic abstract repository class
+# Generic abstract repository class (no support for DB transactions yet, see next topic for it)
 class Repository[T: Aggregate](ABC):
     @abstractmethod
-    async def _find_by_id(self, entity_id: str) -> T | None:
-        pass
-
-    @abstractmethod
-    async def _add(self, entity: T) -> None:
-        pass
-
-    @abstractmethod
-    async def _update(self, entity: T) -> None:
-        pass
-    
-    ###################################
-    # This part will be explained later:
-    def __init__(self, uow: UnitOfWork) -> None:
-        self.__uow = uow
-
-    def __track_object(self, obj: T) -> None:
-        self.__uow.track_object(obj, lambda: self._update(obj))
-
-    async def add(self, entity: T) -> None:
-        await self._add(entity)
-        self.__track_object(entity)
-
     async def find_by_id(self, entity_id: str) -> T | None:
-        obj = await self._find_by_id(entity_id)
+        pass
 
-        if obj is not None:
-            self.__track_object(obj)
+    @abstractmethod
+    async def add(self, entity: T) -> None:
+        pass
 
-        return obj
-    ###################################
+    @abstractmethod
+    async def update(self, entity: T) -> None:
+        pass
 
 class CampaignRepository(Repository[Campaign], ABC):
     pass
@@ -154,6 +134,37 @@ The Unit of Work pattern is used to manage transactions and ensure data consiste
 It tracks changes to aggregates and commits them as a single transaction.
 This pattern represents an abstraction for any database (SQL or not) transaction, 
 de-coupling the domain from particular database implementations.
+
+#### Example: UOW in action
+
+```python
+async def register_campaign_donation(
+    command: TransferSucceededEvent,
+) -> None:
+    # Entering this context manager creates a uow and starts a transaction
+
+    async with uow_factory() as uow:
+        campaign_id: str = command.metadata["campaign_id"]
+
+        campaign: Campaign = await campaign_repository(uow).find_by_id(
+            campaign_id
+        )
+
+        # Notice how we don't have to explicitly call any persistence method on the aggregate,
+        # as the UOW will take care of that for us
+        campaign.donate(
+            Donation(
+                idempotency_key=command.idempotency_key,
+                amount=command.amount,
+                account_id=command.from_account_id,
+            )
+        )
+
+    # Leaving the context manager will: 
+    # * persist the aggregate changes
+    # * store the messages in the transactional outbox
+    # * commit the transaction
+```
 
 #### Example: Abstract Unit of Work
 
@@ -187,6 +198,44 @@ class UnitOfWork(ABC):
 
     @abstractmethod
     async def _rollback(self) -> None:
+        pass
+```
+
+#### Example: Abstract Repository implementation
+
+```python
+# Generic abstract repository class
+class Repository[T: Aggregate](ABC):
+    # We initialize the repository with a UOW
+    def __init__(self, uow: UnitOfWork) -> None:
+        self.__uow = uow
+
+    def __track_object(self, obj: T) -> None:
+        self.__uow.track_object(obj, lambda: self._update(obj))
+
+    # Every time we add or we find an object, we track it so they are persisted on-commit
+    async def add(self, entity: T) -> None:
+        await self._add(entity)
+        self.__track_object(entity)
+
+    async def find_by_id(self, entity_id: str) -> T | None:
+        obj = await self._find_by_id(entity_id)
+
+        if obj is not None:
+            self.__track_object(obj)
+
+        return obj
+
+    @abstractmethod
+    async def _find_by_id(self, entity_id: str) -> T | None:
+        pass
+
+    @abstractmethod
+    async def _add(self, entity: T) -> None:
+        pass
+
+    @abstractmethod
+    async def _update(self, entity: T) -> None:
         pass
 ```
 
@@ -229,37 +278,6 @@ async def make_postgres_unit_of_work() -> AsyncGenerator[PostgresUnitOfWork, Non
         except BaseException:
             await uow.rollback()
             raise
-```
-
-#### Example: UOW in action
-
-```python
-async def register_campaign_donation(
-    command: TransferSucceededEvent,
-) -> None:
-    # Entering this context manager creates a uow and starts a transaction
-
-    async with make_unit_of_work() as uow:
-        campaign_id: str = command.metadata["campaign_id"]
-
-        campaign: Campaign = await campaign_repository(uow).find_by_id(
-            campaign_id
-        )
-
-        # Notice how we don't have to explicitly call any persistence method on the aggregate,
-        # as the UOW will take care of that for us
-        campaign.donate(
-            Donation(
-                idempotency_key=command.idempotency_key,
-                amount=command.amount,
-                account_id=command.from_account_id,
-            )
-        )
-
-    # Leaving the context manager will: 
-    # * persist the aggregate changes
-    # * store the messages in the transactional outbox
-    # * commit the transaction
 ```
 
 I hope this covers the previous commented part of the repository implementation 😅.
@@ -410,6 +428,7 @@ This is why it is important to make sure that the message handlers are idempoten
 #### Example: Transactional Outbox and Outbox processor
 
 ```python
+# This class stores the messages in the database when the uow commits
 class TransactionalOutbox(ABC):
     def __init__(self, uow: UnitOfWork) -> None:
         self.__uow = uow
@@ -418,6 +437,9 @@ class TransactionalOutbox(ABC):
     async def store(self, messages: list[Message]) -> None:
         pass
 
+    
+# This class is supposed to run separately, in a periodic task or even a different process. 
+# This will iterate over the messages
 class TransactionalOutboxProcessor(ABC):
     async def process_messages(self) -> None:
         messages = await self._fetch_messages()
